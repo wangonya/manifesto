@@ -61,6 +61,26 @@ Simulated for the demo:
 
 Implementation is intentionally incremental. See [SPEC.md](./SPEC.md) for the detailed product specification, data model, milestones, and acceptance tests.
 
+## Local Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Validate the production build:
+
+```bash
+npm run build
+```
+
 ## Agent Guidance
 
 See [AGENTS.md](./AGENTS.md) for implementation rules, scope guardrails, and verification expectations for future Codex or agent sessions.

@@ -1,0 +1,274 @@
+:root {
+  color: #18211d;
+  background: #f6f5ef;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(246, 245, 239, 0.92), rgba(246, 245, 239, 1)),
+    #f6f5ef;
+}
+
+.site-header {
+  border-bottom: 1px solid #dad7c9;
+  background: rgba(250, 249, 244, 0.86);
+}
+
+.site-header__inner,
+.main-content {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand__mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 2px solid #2d5a45;
+  border-radius: 8px;
+  color: #2d5a45;
+  font-weight: 800;
+}
+
+.brand__name {
+  margin: 0;
+  color: #13251d;
+  font-size: 1.25rem;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.brand__tagline {
+  margin: 1px 0 0;
+  color: #59645e;
+  font-size: 0.875rem;
+}
+
+.demo-badge {
+  border: 1px solid #b4c6bb;
+  border-radius: 999px;
+  color: #2d5a45;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.main-content {
+  padding: 32px 0 48px;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.panel {
+  border: 1px solid #d7d3c3;
+  border-radius: 8px;
+  background: #fffdf7;
+  box-shadow: 0 18px 40px rgba(52, 48, 38, 0.08);
+}
+
+.overview {
+  padding: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #617067;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overview h2 {
+  max-width: 760px;
+  margin: 0;
+  color: #17251f;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.overview__copy {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: #46534d;
+  font-size: 1.05rem;
+}
+
+.readiness-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readiness-list li {
+  min-height: 112px;
+  border: 1px solid #dedacc;
+  border-radius: 8px;
+  padding: 14px;
+  background: #faf8f0;
+}
+
+.readiness-list strong {
+  display: block;
+  color: #1e3328;
+  font-size: 0.95rem;
+}
+
+.readiness-list span {
+  display: block;
+  margin-top: 6px;
+  color: #5c675f;
+  font-size: 0.875rem;
+}
+
+.status-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.status-panel h2 {
+  margin: 0;
+  color: #17251f;
+  font-size: 1.25rem;
+}
+
+.status-panel p {
+  margin: 8px 0 0;
+  color: #59645e;
+}
+
+.empty-meter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.metric {
+  border: 1px solid #dcd7c8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8f6ee;
+}
+
+.metric__value {
+  display: block;
+  color: #315a47;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.metric__label {
+  display: block;
+  margin-top: 8px;
+  color: #5c675f;
+  font-size: 0.8125rem;
+}
+
+.milestone-note {
+  margin-top: 22px;
+  border-left: 4px solid #a97b32;
+  padding: 12px 0 12px 14px;
+  color: #4f4a3e;
+  font-size: 0.925rem;
+}
+
+@media (max-width: 820px) {
+  .dashboard,
+  .readiness-list {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header__inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overview {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .site-header__inner,
+  .main-content {
+    width: min(100% - 24px, 1120px);
+  }
+
+  .brand {
+    align-items: flex-start;
+  }
+
+  .brand__mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .overview,
+  .status-panel {
+    padding: 18px;
+  }
+
+  .overview h2 {
+    font-size: 2rem;
+    line-height: 1.05;
+  }
+
+  .empty-meter {
+    grid-template-columns: 1fr;
+  }
+}
