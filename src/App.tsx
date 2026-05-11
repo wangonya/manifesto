@@ -9,8 +9,10 @@ import {
   statusHistory,
   syncQueue,
   type Candidate,
+  type Evidence as EvidenceRecord,
   type PromiseRecord,
   type PromiseStatus,
+  type StatusHistory as StatusHistoryRecord,
 } from "./data";
 
 type View = "dashboard" | "manifestos";
@@ -20,6 +22,8 @@ type IconName =
   | "calendar"
   | "check"
   | "chevron"
+  | "clock"
+  | "file"
   | "filter"
   | "map"
   | "pin"
@@ -46,6 +50,13 @@ const statusPriority: Record<PromiseStatus, number> = {
   in_progress: 2,
   not_started: 3,
   kept: 4,
+};
+
+const evidenceTypeLabels: Record<EvidenceRecord["type"], string> = {
+  community_report: "Community report",
+  document: "Document",
+  photo: "Photo",
+  public_record: "Public record",
 };
 
 function Icon({ name }: { name: IconName }) {
@@ -82,6 +93,20 @@ function Icon({ name }: { name: IconName }) {
     chevron: (
       <>
         <path d="m9 18 6-6-6-6" />
+      </>
+    ),
+    clock: (
+      <>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v5l3 2" />
+      </>
+    ),
+    file: (
+      <>
+        <path d="M6 3h8l4 4v14H6z" />
+        <path d="M14 3v5h4" />
+        <path d="M9 13h6" />
+        <path d="M9 17h4" />
       </>
     ),
     filter: (
@@ -155,6 +180,16 @@ function formatDate(value: string) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function getCandidateForPromise(promise: PromiseRecord) {
   const manifesto = manifestos.find((item) => item.id === promise.manifestoId);
   return candidates.find((candidate) => candidate.id === manifesto?.candidateId);
@@ -183,6 +218,18 @@ function getStatusCounts(items: PromiseRecord[]) {
       at_risk: 0,
     } satisfies Record<PromiseStatus, number>,
   );
+}
+
+function getEvidenceForPromise(promiseId: string) {
+  return evidence
+    .filter((item) => item.promiseId === promiseId)
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+}
+
+function getStatusHistoryForPromise(promiseId: string) {
+  return statusHistory
+    .filter((item) => item.promiseId === promiseId)
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 }
 
 function isElectedCandidate(candidate: Candidate) {
@@ -242,17 +289,40 @@ function StatusPill({
   return <span className={`status-pill status-pill--${tone}`}>{children}</span>;
 }
 
-function PromiseCard({ promise }: { promise: PromiseRecord }) {
+function PromiseCard({
+  active = false,
+  onSelect,
+  promise,
+}: {
+  active?: boolean;
+  onSelect?: (promiseId: string) => void;
+  promise: PromiseRecord;
+}) {
   const candidate = getCandidateForPromise(promise);
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
 
   return (
-    <article className="promise-card">
+    <article className={`promise-card ${active ? "is-active" : ""}`}>
       <div className="promise-card__topline">
         <StatusPill tone={promise.status}>{statusLabels[promise.status]}</StatusPill>
         <span className="promise-card__sector">{promise.sector}</span>
       </div>
-      <h3>{promise.title}</h3>
+      <h3>
+        {onSelect ? (
+          <button
+            aria-label={`View details for ${promise.title}`}
+            aria-pressed={active}
+            className="promise-card__title-button"
+            onClick={() => onSelect(promise.id)}
+            type="button"
+          >
+            <span>{promise.title}</span>
+            <Icon name="chevron" />
+          </button>
+        ) : (
+          promise.title
+        )}
+      </h3>
       <p>{promise.summariesByLanguage.en}</p>
       <dl className="promise-meta">
         <div>
@@ -283,9 +353,193 @@ function PromiseCard({ promise }: { promise: PromiseRecord }) {
   );
 }
 
+function linkedEvidenceLabels(historyItem: StatusHistoryRecord) {
+  return historyItem.evidenceIds
+    .map((evidenceId) => evidence.find((item) => item.id === evidenceId)?.sourceLabel)
+    .filter(Boolean)
+    .join(", ");
+}
+
+function PromiseDetail({ compact = false, promise }: { compact?: boolean; promise?: PromiseRecord }) {
+  if (!promise) {
+    return (
+      <section
+        className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
+        aria-label="Promise detail"
+      >
+        <div className="section-heading">
+          <p className="eyebrow">Promise detail</p>
+          <h2>Select a promise</h2>
+        </div>
+        <p className="empty-copy">Choose a promise to review checkpoints, evidence, and status history.</p>
+      </section>
+    );
+  }
+
+  const candidate = getCandidateForPromise(promise);
+  const manifesto = candidate ? getManifestoForCandidate(candidate.id) : undefined;
+  const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
+  const promiseEvidence = getEvidenceForPromise(promise.id);
+  const promiseHistory = getStatusHistoryForPromise(promise.id);
+
+  return (
+    <section
+      className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
+      aria-labelledby={`detail-${promise.id}`}
+    >
+      <div className="promise-detail__header">
+        <div>
+          <p className="eyebrow">Promise detail</p>
+          <h2 id={`detail-${promise.id}`}>{promise.title}</h2>
+          <p>{promise.summariesByLanguage.en}</p>
+        </div>
+        <StatusPill tone={promise.status}>{statusLabels[promise.status]}</StatusPill>
+      </div>
+
+      <dl className="detail-facts" aria-label="Promise facts">
+        <div>
+          <dt>
+            <Icon name="user" />
+            Candidate
+          </dt>
+          <dd>{candidate?.name ?? "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>
+            <Icon name="map" />
+            Place
+          </dt>
+          <dd>{promise.location}</dd>
+        </div>
+        <div>
+          <dt>
+            <Icon name="calendar" />
+            Deadline
+          </dt>
+          <dd>{formatDate(promise.deadline)}</dd>
+        </div>
+        <div>
+          <dt>
+            <Icon name="book" />
+            Source
+          </dt>
+          <dd>{manifesto?.sourceLabel ?? "Unknown source"}</dd>
+        </div>
+      </dl>
+
+      <div className="detail-block">
+        <div className="detail-block__heading">
+          <div>
+            <p className="eyebrow">Checkpoints</p>
+            <h3>
+              {completed} of {promise.checkpoints.length} complete
+            </h3>
+          </div>
+          <span className="detail-count">{promise.sector}</span>
+        </div>
+        <ol className="checkpoint-list">
+          {promise.checkpoints.map((checkpoint) => (
+            <li
+              className={`checkpoint-item ${checkpoint.complete ? "is-complete" : ""}`}
+              key={`${promise.id}-${checkpoint.label}`}
+            >
+              <span className="checkpoint-item__marker">
+                <Icon name={checkpoint.complete ? "check" : "clock"} />
+              </span>
+              <div>
+                <strong>{checkpoint.label}</strong>
+                <span>Due {formatDate(checkpoint.dueDate)}</span>
+              </div>
+              <StatusPill tone={checkpoint.complete ? "kept" : "not_started"}>
+                {checkpoint.complete ? "Complete" : "Pending"}
+              </StatusPill>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="detail-block">
+        <div className="detail-block__heading">
+          <div>
+            <p className="eyebrow">Evidence</p>
+            <h3>Anonymous community record</h3>
+          </div>
+          <span className="detail-count">{promiseEvidence.length}</span>
+        </div>
+        {promiseEvidence.length > 0 ? (
+          <ul className="detail-list">
+            {promiseEvidence.map((item) => (
+              <li className="detail-row" key={item.id}>
+                <span className="detail-row__icon">
+                  <Icon name={item.createdOffline ? "signal" : "file"} />
+                </span>
+                <div>
+                  <div className="detail-row__topline">
+                    <strong>{evidenceTypeLabels[item.type]}</strong>
+                    <span>{formatDateTime(item.createdAt)}</span>
+                  </div>
+                  <p>{item.note}</p>
+                  <div className="detail-tags">
+                    <span>{item.sourceLabel}</span>
+                    {item.anonymous ? <span>Anonymous</span> : null}
+                    {item.createdOffline ? <span>Created offline</span> : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-copy">No evidence has been added for this promise yet.</p>
+        )}
+      </div>
+
+      <div className="detail-block">
+        <div className="detail-block__heading">
+          <div>
+            <p className="eyebrow">Status history</p>
+            <h3>Why the status changed</h3>
+          </div>
+          <span className="detail-count">{promiseHistory.length}</span>
+        </div>
+        {promiseHistory.length > 0 ? (
+          <ul className="detail-list">
+            {promiseHistory.map((item) => {
+              const evidenceLabels = linkedEvidenceLabels(item);
+              return (
+                <li className="detail-row" key={item.id}>
+                  <span className="detail-row__icon">
+                    <Icon name="check" />
+                  </span>
+                  <div>
+                    <div className="detail-row__topline">
+                      <StatusPill tone={item.status}>{statusLabels[item.status]}</StatusPill>
+                      <span>{formatDateTime(item.createdAt)}</span>
+                    </div>
+                    <p>{item.reason}</p>
+                    <div className="detail-tags">
+                      <span>
+                        {item.evidenceIds.length} linked evidence{" "}
+                        {item.evidenceIds.length === 1 ? "item" : "items"}
+                      </span>
+                      {evidenceLabels ? <span>{evidenceLabels}</span> : null}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="empty-copy">No status changes recorded yet.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const [view, setView] = useState<View>("dashboard");
   const [selectedCandidateId, setSelectedCandidateId] = useState("cand-amina");
+  const [selectedPromiseId, setSelectedPromiseId] = useState(promises[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState("All offices");
   const [sectorFilter, setSectorFilter] = useState("All sectors");
@@ -344,12 +598,43 @@ function App() {
   const selectedManifesto = getManifestoForCandidate(selectedCandidate.id);
   const selectedPromises = getPromisesForCandidate(selectedCandidate.id);
   const selectedPromiseIds = new Set(selectedPromises.map((promise) => promise.id));
+  const selectedPromise =
+    promises.find((promise) => promise.id === selectedPromiseId) ?? selectedPromises[0] ?? priorityPromises[0];
   const selectedContextNotes = contextNotes.filter((note) => selectedPromiseIds.has(note.promiseId));
   const selectedStatusHistory = statusHistory.filter((item) => selectedPromiseIds.has(item.promiseId));
   const selectedStatusCounts = getStatusCounts(selectedPromises);
   const offices = ["All offices", ...Array.from(new Set(candidates.map((candidate) => candidate.office)))];
   const sectors = ["All sectors", ...Array.from(new Set(promises.map((promise) => promise.sector)))];
   const recentEvidence = [...evidence].sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+
+  function handleSelectCandidate(candidateId: string) {
+    setSelectedCandidateId(candidateId);
+    const firstPromise = getPromisesForCandidate(candidateId)[0];
+    if (firstPromise) {
+      setSelectedPromiseId(firstPromise.id);
+    }
+  }
+
+  function handleSelectPromise(promiseId: string) {
+    setSelectedPromiseId(promiseId);
+    const promise = promises.find((item) => item.id === promiseId);
+    const candidate = promise ? getCandidateForPromise(promise) : undefined;
+    if (candidate) {
+      setSelectedCandidateId(candidate.id);
+    }
+  }
+
+  function handleSelectView(nextView: View) {
+    if (nextView === "dashboard") {
+      const dashboardPromise =
+        priorityPromises.find((promise) => promise.id === selectedPromiseId) ?? priorityPromises[0];
+      if (dashboardPromise && dashboardPromise.id !== selectedPromiseId) {
+        setSelectedPromiseId(dashboardPromise.id);
+      }
+    }
+
+    setView(nextView);
+  }
 
   return (
     <div className="app-shell">
@@ -390,7 +675,7 @@ function App() {
         <nav className="view-tabs" aria-label="Primary views">
           <button
             className={view === "dashboard" ? "is-active" : ""}
-            onClick={() => setView("dashboard")}
+            onClick={() => handleSelectView("dashboard")}
             type="button"
           >
             <Icon name="pin" />
@@ -398,7 +683,7 @@ function App() {
           </button>
           <button
             className={view === "manifestos" ? "is-active" : ""}
-            onClick={() => setView("manifestos")}
+            onClick={() => handleSelectView("manifestos")}
             type="button"
           >
             <Icon name="book" />
@@ -446,9 +731,15 @@ function App() {
               </div>
 
               <div className="card-stack">
-                {priorityPromises.map((promise) => (
-                  <PromiseCard key={promise.id} promise={promise} />
-                ))}
+                {priorityPromises.map((promise) => {
+                  const isSelected = selectedPromise?.id === promise.id;
+                  return (
+                    <div className="promise-card-group" key={promise.id}>
+                      <PromiseCard active={isSelected} onSelect={handleSelectPromise} promise={promise} />
+                      {isSelected ? <PromiseDetail compact promise={promise} /> : null}
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -467,7 +758,7 @@ function App() {
                         key={candidate.id}
                         candidate={candidate}
                         onSelect={(candidateId) => {
-                          setSelectedCandidateId(candidateId);
+                          handleSelectCandidate(candidateId);
                           setView("manifestos");
                         }}
                       />
@@ -544,7 +835,7 @@ function App() {
                     active={selectedCandidate.id === candidate.id}
                     candidate={candidate}
                     key={candidate.id}
-                    onSelect={setSelectedCandidateId}
+                    onSelect={handleSelectCandidate}
                   />
                 ))}
               </div>
@@ -609,9 +900,15 @@ function App() {
                     <div className="card-stack">
                       {selectedPromises
                         .filter((promise) => promise.sector === sector)
-                        .map((promise) => (
-                          <PromiseCard key={promise.id} promise={promise} />
-                        ))}
+                        .map((promise) => {
+                          const isSelected = selectedPromise?.id === promise.id;
+                          return (
+                            <div className="promise-card-group" key={promise.id}>
+                              <PromiseCard active={isSelected} onSelect={handleSelectPromise} promise={promise} />
+                              {isSelected ? <PromiseDetail compact promise={promise} /> : null}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 ))}
