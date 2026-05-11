@@ -4,7 +4,6 @@ import {
   candidates,
   contextNotes,
   evidence,
-  manifestos,
   promises,
   statusHistory,
   syncQueue,
@@ -14,6 +13,21 @@ import {
   type PromiseStatus,
   type StatusHistory as StatusHistoryRecord,
 } from "./data";
+import {
+  filterCandidates,
+  followedCandidateIds,
+  followedRegions,
+  followedSectors,
+  getCandidateForPromise,
+  getEvidenceForPromise,
+  getFollowedPromises,
+  getManifestoForCandidate,
+  getPriorityPromises,
+  getPromisesForCandidate,
+  getStatusCounts,
+  getStatusHistoryForPromise,
+  isElectedCandidate,
+} from "./domain";
 
 type View = "dashboard" | "manifestos";
 type IconName =
@@ -32,24 +46,12 @@ type IconName =
   | "signal"
   | "user";
 
-const followedCandidateIds = ["cand-amina", "cand-david", "cand-mary"];
-const followedSectors = ["Health", "Water", "Education", "Safety"];
-const followedRegions = ["Lakeside County", "Kijani East", "Mto Ward"];
-
 const statusLabels: Record<PromiseStatus, string> = {
   kept: "Kept",
   in_progress: "In progress",
   missed: "Missed",
   not_started: "Not started",
   at_risk: "At risk",
-};
-
-const statusPriority: Record<PromiseStatus, number> = {
-  missed: 0,
-  at_risk: 1,
-  in_progress: 2,
-  not_started: 3,
-  kept: 4,
 };
 
 const evidenceTypeLabels: Record<EvidenceRecord["type"], string> = {
@@ -188,52 +190,6 @@ function formatDateTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function getCandidateForPromise(promise: PromiseRecord) {
-  const manifesto = manifestos.find((item) => item.id === promise.manifestoId);
-  return candidates.find((candidate) => candidate.id === manifesto?.candidateId);
-}
-
-function getManifestoForCandidate(candidateId: string) {
-  return manifestos.find((manifesto) => manifesto.candidateId === candidateId);
-}
-
-function getPromisesForCandidate(candidateId: string) {
-  const manifesto = getManifestoForCandidate(candidateId);
-  return promises.filter((promise) => promise.manifestoId === manifesto?.id);
-}
-
-function getStatusCounts(items: PromiseRecord[]) {
-  return items.reduce(
-    (counts, promise) => {
-      counts[promise.status] += 1;
-      return counts;
-    },
-    {
-      kept: 0,
-      in_progress: 0,
-      missed: 0,
-      not_started: 0,
-      at_risk: 0,
-    } satisfies Record<PromiseStatus, number>,
-  );
-}
-
-function getEvidenceForPromise(promiseId: string) {
-  return evidence
-    .filter((item) => item.promiseId === promiseId)
-    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
-}
-
-function getStatusHistoryForPromise(promiseId: string) {
-  return statusHistory
-    .filter((item) => item.promiseId === promiseId)
-    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
-}
-
-function isElectedCandidate(candidate: Candidate) {
-  return candidate.status === "elected";
 }
 
 function CandidateCard({
@@ -545,52 +501,17 @@ function App() {
   const [sectorFilter, setSectorFilter] = useState("All sectors");
 
   const followedPromises = useMemo(
-    () =>
-      promises.filter((promise) => {
-        const candidate = getCandidateForPromise(promise);
-        const isExplicitlyFollowed = candidate ? followedCandidateIds.includes(candidate.id) : false;
-        return (
-          candidate &&
-          (isExplicitlyFollowed ||
-            followedSectors.includes(promise.sector) ||
-            (isElectedCandidate(candidate) && followedRegions.includes(candidate.region)))
-        );
-      }),
+    () => getFollowedPromises(),
     [],
   );
 
   const priorityPromises = useMemo(
-    () =>
-      [...followedPromises]
-        .sort((first, second) => {
-          const statusDelta = statusPriority[first.status] - statusPriority[second.status];
-          if (statusDelta !== 0) return statusDelta;
-          return first.deadline.localeCompare(second.deadline);
-        })
-        .slice(0, 4),
+    () => getPriorityPromises(followedPromises),
     [followedPromises],
   );
 
   const filteredCandidates = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return candidates.filter((candidate) => {
-      const candidatePromises = getPromisesForCandidate(candidate.id);
-      const searchText = [
-        candidate.name,
-        candidate.office,
-        candidate.region,
-        candidate.partyOrAffiliation,
-        ...candidatePromises.map((promise) => `${promise.title} ${promise.sector} ${promise.location}`),
-      ]
-        .join(" ")
-        .toLowerCase();
-      const matchesQuery = !normalizedQuery || searchText.includes(normalizedQuery);
-      const matchesOffice = officeFilter === "All offices" || candidate.office === officeFilter;
-      const matchesSector =
-        sectorFilter === "All sectors" ||
-        candidatePromises.some((promise) => promise.sector === sectorFilter);
-      return matchesQuery && matchesOffice && matchesSector;
-    });
+    return filterCandidates({ officeFilter, query, sectorFilter });
   }, [officeFilter, query, sectorFilter]);
 
   const selectedCandidate =

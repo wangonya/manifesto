@@ -81,6 +81,18 @@ Validate the production build:
 npm run build
 ```
 
+Run the regression test suite:
+
+```bash
+npm run test:run
+```
+
+Run the full local validation gate:
+
+```bash
+npm run check
+```
+
 ## Agent Guidance
 
 See [AGENTS.md](./AGENTS.md) for implementation rules, scope guardrails, and verification expectations for future Codex or agent sessions.
