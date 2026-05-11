@@ -14,6 +14,7 @@ The demo should show a credible accountability loop: structured promises, plain-
 - Prefer the simplest working version that proves the civic workflow.
 - Keep the demo honest: simulate hard infrastructure when production-grade implementation is out of scope.
 - When creating branches, do not use a `codex/` prefix. Always choose a useful, descriptive branch name.
+- When opening pull requests, do not open them as draft unless explicitly asked.
 
 ## Technical Defaults
 
