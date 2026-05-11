@@ -61,6 +61,13 @@ button {
 .view-tabs,
 .view-tabs button,
 .promise-card__topline,
+.promise-card__title-button,
+.promise-detail__header,
+.detail-block__heading,
+.detail-facts dt,
+.detail-row__topline,
+.detail-tags,
+.checkpoint-item,
 .filter-field span,
 .quiet-note,
 .promise-meta dt {
@@ -147,7 +154,9 @@ button {
 .intro-panel h2,
 .section-heading h2,
 .candidate-profile h2,
-.promise-card h3 {
+.promise-card h3,
+.promise-detail h2,
+.detail-block h3 {
   margin: 0;
   color: #17241d;
   letter-spacing: 0;
@@ -279,6 +288,11 @@ button {
   gap: 18px;
 }
 
+.promise-card-group {
+  display: grid;
+  gap: 10px;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -341,6 +355,16 @@ button {
 
 .promise-card {
   padding: 24px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.promise-card.is-active {
+  border-color: #9bc5aa;
+  background: #f6fbf6;
+  box-shadow: inset 4px 0 0 #2e7d5e;
 }
 
 .promise-card__topline {
@@ -360,13 +384,34 @@ button {
   line-height: 1.25;
 }
 
+.promise-card__title-button {
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.promise-card__title-button:hover {
+  color: #2e7d5e;
+}
+
+.promise-card__title-button .icon {
+  flex: 0 0 auto;
+  color: #8a928b;
+}
+
 .promise-card p {
   margin: 10px 0 0;
   color: #56635b;
 }
 
 .promise-meta,
-.manifesto-facts {
+.manifesto-facts,
+.detail-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -374,13 +419,15 @@ button {
 }
 
 .promise-meta div,
-.manifesto-facts div {
+.manifesto-facts div,
+.detail-facts div {
   border-top: 1px solid #e4dfd3;
   padding-top: 12px;
 }
 
 .promise-meta dt,
-.manifesto-facts dt {
+.manifesto-facts dt,
+.detail-facts dt {
   gap: 6px;
   color: #6f7a73;
   font-size: 0.72rem;
@@ -390,11 +437,182 @@ button {
 }
 
 .promise-meta dd,
-.manifesto-facts dd {
+.manifesto-facts dd,
+.detail-facts dd {
   margin: 4px 0 0;
   color: #26312b;
   font-size: 0.9rem;
   font-weight: 650;
+}
+
+.promise-detail {
+  display: grid;
+  gap: 22px;
+}
+
+.promise-detail--inline {
+  border-color: #b7d2c2;
+  background: #fbfefb;
+  box-shadow: inset 4px 0 0 #9bc5aa;
+}
+
+.promise-detail__header {
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.promise-detail__header h2 {
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.12;
+}
+
+.promise-detail__header p:not(.eyebrow) {
+  margin: 10px 0 0;
+  color: #56635b;
+}
+
+.detail-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.detail-block {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #e6e1d5;
+  padding-top: 18px;
+}
+
+.detail-block__heading {
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.detail-block__heading .eyebrow {
+  margin-bottom: 4px;
+}
+
+.detail-block h3 {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.detail-count {
+  border: 1px solid #d8d4c7;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #faf8f0;
+  color: #5e6a63;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.checkpoint-list,
+.detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkpoint-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e4dfd3;
+  border-radius: 8px;
+  padding: 12px;
+  background: #faf8f0;
+}
+
+.checkpoint-item.is-complete {
+  border-color: #c8dacd;
+  background: #f0f8f2;
+}
+
+.checkpoint-item__marker,
+.detail-row__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d3ddce;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #526158;
+}
+
+.checkpoint-item.is-complete .checkpoint-item__marker {
+  border-color: #b8d4c0;
+  background: #e5f2e8;
+  color: #2e7d5e;
+}
+
+.checkpoint-item strong,
+.detail-row strong {
+  display: block;
+  color: #26312b;
+  font-size: 0.92rem;
+}
+
+.checkpoint-item span:not(.checkpoint-item__marker):not(.status-pill) {
+  display: block;
+  margin-top: 3px;
+  color: #68746d;
+  font-size: 0.84rem;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  border-top: 1px solid #e6e1d5;
+  padding-top: 12px;
+}
+
+.detail-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.detail-row__topline {
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.detail-row__topline > span:not(.status-pill) {
+  flex: 0 0 auto;
+  color: #78827c;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detail-row p {
+  margin: 6px 0 0;
+  color: #56635b;
+  font-size: 0.9rem;
+}
+
+.detail-tags {
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.detail-tags span {
+  border: 1px solid #e0dbce;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fffdf8;
+  color: #68746d;
+  font-size: 0.72rem;
+  font-weight: 760;
 }
 
 .candidate-card {
@@ -612,7 +830,8 @@ button {
   .browser-layout,
   .context-rail,
   .promise-meta,
-  .manifesto-facts {
+  .manifesto-facts,
+  .detail-facts {
     grid-template-columns: 1fr;
   }
 
@@ -665,11 +884,20 @@ button {
   }
 
   .candidate-profile,
-  .candidate-card {
+  .candidate-card,
+  .checkpoint-item,
+  .detail-row {
     grid-template-columns: 1fr;
   }
 
   .candidate-card__arrow {
     display: none;
+  }
+
+  .promise-detail__header,
+  .detail-block__heading,
+  .detail-row__topline {
+    display: grid;
+    justify-content: stretch;
   }
 }
