@@ -58,7 +58,12 @@ The demo should show a credible accountability loop: structured promises, plain-
 
 ## Verification Expectations
 
-- Run type checks or production builds after implementation steps when available.
+- Run `npm run check` after implementation steps when available. This runs type checks, the Vitest regression suite, and the production build.
+- Use `npm run test:run` for the fast regression suite while iterating, and `npm run test` for watch mode when useful.
+- Add or update tests for every new feature. New behavior should be covered at the right level: domain/helper tests for pure data rules, React Testing Library tests for UI workflows, and later browser/PWA tests for persistence, service worker, and offline behavior.
+- Do not break existing tests. If a change breaks a test because it intentionally changes product behavior, update the test in the same change so the new expected behavior is explicit.
+- If changing one feature has a side effect that affects another feature's behavior, update or add tests for both the changed feature and the affected behavior.
+- Keep regression tests focused on civic workflows that matter to the demo: dashboard browsing, manifesto filtering, promise detail inspection, anonymous evidence, context notes, local persistence, and simulated sync.
 - Manually verify that local data survives refresh after persistence is added.
 - Manually verify that the app opens offline after PWA caching is added.
 - Check responsive behavior on mobile and desktop widths.
