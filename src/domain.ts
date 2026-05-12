@@ -1,18 +1,20 @@
 import {
-  candidates,
-  contextNotes,
-  evidence,
-  manifestos,
-  promises,
-  statusHistory,
+  candidates as seededCandidates,
+  contextNotes as seededContextNotes,
+  evidence as seededEvidence,
+  manifestos as seededManifestos,
+  promises as seededPromises,
+  statusHistory as seededStatusHistory,
   type Candidate,
   type ContextNote,
   type Evidence as EvidenceRecord,
+  type Manifesto,
   type OfficeCode,
   type PromiseRecord,
   type PromiseStatus,
   type RegionCode,
   type SectorCode,
+  type StatusHistory as StatusHistoryRecord,
 } from "./data";
 import {
   localize,
@@ -26,6 +28,20 @@ export const followedCandidateIds = ["cand-amina", "cand-david", "cand-mary"];
 export const followedSectors: SectorCode[] = ["health", "water", "education", "safety"];
 export const followedRegions: RegionCode[] = ["lakeside_county", "kijani_east", "mto_ward"];
 
+export type CivicData = {
+  candidates: Candidate[];
+  manifestos: Manifesto[];
+  promises: PromiseRecord[];
+  statusHistory: StatusHistoryRecord[];
+};
+
+export const seededCivicData: CivicData = {
+  candidates: seededCandidates,
+  manifestos: seededManifestos,
+  promises: seededPromises,
+  statusHistory: seededStatusHistory,
+};
+
 export const statusPriority: Record<PromiseStatus, number> = {
   missed: 0,
   at_risk: 1,
@@ -34,18 +50,27 @@ export const statusPriority: Record<PromiseStatus, number> = {
   kept: 4,
 };
 
-export function getCandidateForPromise(promise: PromiseRecord) {
-  const manifesto = manifestos.find((item) => item.id === promise.manifestoId);
-  return candidates.find((candidate) => candidate.id === manifesto?.candidateId);
+export function getCandidateForPromise(
+  promise: PromiseRecord,
+  data: Pick<CivicData, "candidates" | "manifestos"> = seededCivicData,
+) {
+  const manifesto = data.manifestos.find((item) => item.id === promise.manifestoId);
+  return data.candidates.find((candidate) => candidate.id === manifesto?.candidateId);
 }
 
-export function getManifestoForCandidate(candidateId: string) {
-  return manifestos.find((manifesto) => manifesto.candidateId === candidateId);
+export function getManifestoForCandidate(
+  candidateId: string,
+  data: Pick<CivicData, "manifestos"> = seededCivicData,
+) {
+  return data.manifestos.find((manifesto) => manifesto.candidateId === candidateId);
 }
 
-export function getPromisesForCandidate(candidateId: string) {
-  const manifesto = getManifestoForCandidate(candidateId);
-  return promises.filter((promise) => promise.manifestoId === manifesto?.id);
+export function getPromisesForCandidate(
+  candidateId: string,
+  data: Pick<CivicData, "manifestos" | "promises"> = seededCivicData,
+) {
+  const manifesto = getManifestoForCandidate(candidateId, data);
+  return data.promises.filter((promise) => promise.manifestoId === manifesto?.id);
 }
 
 export function getStatusCounts(items: PromiseRecord[]) {
@@ -64,7 +89,7 @@ export function getStatusCounts(items: PromiseRecord[]) {
   );
 }
 
-export function getEvidenceForPromise(promiseId: string, evidenceRecords: EvidenceRecord[] = evidence) {
+export function getEvidenceForPromise(promiseId: string, evidenceRecords: EvidenceRecord[] = seededEvidence) {
   return evidenceRecords
     .filter((item) => item.promiseId === promiseId)
     .sort((first, second) => {
@@ -75,7 +100,7 @@ export function getEvidenceForPromise(promiseId: string, evidenceRecords: Eviden
     });
 }
 
-export function getContextNotesForPromise(promiseId: string, contextNoteRecords: ContextNote[] = contextNotes) {
+export function getContextNotesForPromise(promiseId: string, contextNoteRecords: ContextNote[] = seededContextNotes) {
   return contextNoteRecords
     .filter((item) => item.promiseId === promiseId)
     .sort((first, second) => {
@@ -86,8 +111,11 @@ export function getContextNotesForPromise(promiseId: string, contextNoteRecords:
     });
 }
 
-export function getStatusHistoryForPromise(promiseId: string) {
-  return statusHistory
+export function getStatusHistoryForPromise(
+  promiseId: string,
+  statusHistoryRecords: StatusHistoryRecord[] = seededStatusHistory,
+) {
+  return statusHistoryRecords
     .filter((item) => item.promiseId === promiseId)
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 }
@@ -100,9 +128,9 @@ export function isCandidateInFollowedRegion(candidate: Candidate) {
   return isElectedCandidate(candidate) && followedRegions.includes(candidate.region);
 }
 
-export function getFollowedPromises() {
-  return promises.filter((promise) => {
-    const candidate = getCandidateForPromise(promise);
+export function getFollowedPromises(data: CivicData = seededCivicData) {
+  return data.promises.filter((promise) => {
+    const candidate = getCandidateForPromise(promise, data);
     const isExplicitlyFollowed = candidate ? followedCandidateIds.includes(candidate.id) : false;
     return (
       candidate &&
@@ -124,19 +152,21 @@ export function getPriorityPromises(items: PromiseRecord[] = getFollowedPromises
 }
 
 export function filterCandidates({
+  data = seededCivicData,
   language,
   officeFilter,
   query,
   sectorFilter,
 }: {
+  data?: CivicData;
   language: LanguageCode;
   officeFilter: "all" | OfficeCode;
   query: string;
   sectorFilter: "all" | SectorCode;
 }) {
   const normalizedQuery = query.trim().toLowerCase();
-  return candidates.filter((candidate) => {
-    const candidatePromises = getPromisesForCandidate(candidate.id);
+  return data.candidates.filter((candidate) => {
+    const candidatePromises = getPromisesForCandidate(candidate.id, data);
     const searchText = [
       candidate.name,
       localize(officeLabels[candidate.office], language),

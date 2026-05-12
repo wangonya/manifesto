@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import "./App.css";
 import { PromiseRow } from "@/components/app/promise-row";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -18,11 +19,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  candidates,
+  candidates as seededCandidates,
   contextNotes as seededContextNotes,
   evidence as seededEvidence,
-  promises,
-  statusHistory,
+  manifestos as seededManifestos,
+  promises as seededPromises,
+  statusHistory as seededStatusHistory,
   syncQueue as seededSyncQueue,
   type Candidate,
   type ContextNote as ContextNoteRecord,
@@ -34,7 +36,9 @@ import {
   type StatusHistory as StatusHistoryRecord,
   type SyncEnvelope,
 } from "./data";
+import { db, seedManifestoDatabase } from "./db";
 import {
+  type CivicData,
   filterCandidates,
   getCandidateForPromise,
   getContextNotesForPromise,
@@ -125,6 +129,22 @@ const evidenceFormToplineClass =
 const evidenceFormGridClass = "grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 max-[520px]:grid-cols-1";
 const formFieldClass = "grid gap-1.5 text-sm font-medium text-muted-foreground";
 const nativeFieldClass = "w-full rounded-md border border-input bg-background px-3 py-2.5 text-foreground";
+
+type PersistedAppData = CivicData & {
+  evidence: EvidenceRecord[];
+  contextNotes: ContextNoteRecord[];
+  syncQueue: SyncEnvelope[];
+};
+
+const seededPersistedAppData: PersistedAppData = {
+  candidates: seededCandidates,
+  manifestos: seededManifestos,
+  promises: seededPromises,
+  evidence: seededEvidence,
+  contextNotes: seededContextNotes,
+  statusHistory: seededStatusHistory,
+  syncQueue: seededSyncQueue,
+};
 
 type SourceLabelOption = {
   id: string;
@@ -295,6 +315,10 @@ function getSourceLabelOptions(sector: SectorCode) {
   return sourceLabelsBySector[sector] ?? defaultSourceLabels;
 }
 
+function createLocalId(kind: "context" | "evidence") {
+  return `${kind}-local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
     archive: (
@@ -430,16 +454,18 @@ function CandidateCard({
   candidate,
   active,
   compact = false,
+  civicData,
   language,
   onSelect,
 }: {
   candidate: Candidate;
   active?: boolean;
   compact?: boolean;
+  civicData: CivicData;
   language: LanguageCode;
   onSelect: (candidateId: string) => void;
 }) {
-  const candidatePromises = getPromisesForCandidate(candidate.id);
+  const candidatePromises = getPromisesForCandidate(candidate.id, civicData);
   const counts = getStatusCounts(candidatePromises);
   const candidateStatusLabel = isElectedCandidate(candidate)
     ? localize(uiCopy.elected, language)
@@ -525,6 +551,7 @@ function linkedEvidenceLabels(
 
 function PromiseDetailTabs({
   compact = false,
+  civicData,
   contextNoteRecords,
   evidenceRecords,
   language,
@@ -533,11 +560,12 @@ function PromiseDetailTabs({
   promise,
 }: {
   compact?: boolean;
+  civicData: CivicData;
   contextNoteRecords: ContextNoteRecord[];
   evidenceRecords: EvidenceRecord[];
   language: LanguageCode;
-  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => void;
-  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
+  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => Promise<void>;
+  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => Promise<void>;
   promise: PromiseRecord;
 }) {
   const [evidenceType, setEvidenceType] = useState<EvidenceRecord["type"]>("community_report");
@@ -546,10 +574,14 @@ function PromiseDetailTabs({
   const [confidenceLabel, setConfidenceLabel] =
     useState<ContextNoteRecord["confidenceLabel"]>("community report");
   const [contextNote, setContextNote] = useState("");
-  const canSubmitEvidence = sourceLabelId.trim() !== "" && evidenceNote.trim() !== "";
-  const canSubmitContextNote = contextNote.trim() !== "";
+  const [evidenceSaveFailed, setEvidenceSaveFailed] = useState(false);
+  const [contextSaveFailed, setContextSaveFailed] = useState(false);
+  const [savingEvidence, setSavingEvidence] = useState(false);
+  const [savingContextNote, setSavingContextNote] = useState(false);
+  const canSubmitEvidence = sourceLabelId.trim() !== "" && evidenceNote.trim() !== "" && !savingEvidence;
+  const canSubmitContextNote = contextNote.trim() !== "" && !savingContextNote;
 
-  function handleSubmitEvidence(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmitEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!promise || !canSubmitEvidence) return;
     const selectedSourceLabel = getSourceLabelOptions(promise.sector).find(
@@ -557,34 +589,50 @@ function PromiseDetailTabs({
     );
     if (!selectedSourceLabel) return;
 
-    onAddEvidence(promise.id, {
-      type: evidenceType,
-      sourceLabel: selectedSourceLabel.label,
-      note: evidenceNote.trim(),
-    });
-    setSourceLabelId("");
-    setEvidenceNote("");
-    setEvidenceType("community_report");
+    setSavingEvidence(true);
+    setEvidenceSaveFailed(false);
+    try {
+      await onAddEvidence(promise.id, {
+        type: evidenceType,
+        sourceLabel: selectedSourceLabel.label,
+        note: evidenceNote.trim(),
+      });
+      setSourceLabelId("");
+      setEvidenceNote("");
+      setEvidenceType("community_report");
+    } catch {
+      setEvidenceSaveFailed(true);
+    } finally {
+      setSavingEvidence(false);
+    }
   }
 
-  function handleSubmitContextNote(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmitContextNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!promise || !canSubmitContextNote) return;
 
-    onAddContextNote(promise.id, {
-      note: contextNote.trim(),
-      confidenceLabel,
-    });
-    setContextNote("");
-    setConfidenceLabel("community report");
+    setSavingContextNote(true);
+    setContextSaveFailed(false);
+    try {
+      await onAddContextNote(promise.id, {
+        note: contextNote.trim(),
+        confidenceLabel,
+      });
+      setContextNote("");
+      setConfidenceLabel("community report");
+    } catch {
+      setContextSaveFailed(true);
+    } finally {
+      setSavingContextNote(false);
+    }
   }
 
-  const candidate = getCandidateForPromise(promise);
-  const manifesto = candidate ? getManifestoForCandidate(candidate.id) : undefined;
+  const candidate = getCandidateForPromise(promise, civicData);
+  const manifesto = candidate ? getManifestoForCandidate(candidate.id, civicData) : undefined;
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
   const promiseContextNotes = getContextNotesForPromise(promise.id, contextNoteRecords);
   const promiseEvidence = getEvidenceForPromise(promise.id, evidenceRecords);
-  const promiseHistory = getStatusHistoryForPromise(promise.id);
+  const promiseHistory = getStatusHistoryForPromise(promise.id, civicData.statusHistory);
   const sourceLabelOptions = getSourceLabelOptions(promise.sector);
   const promiseTitle = localize(promise.title, language);
 
@@ -754,6 +802,18 @@ function PromiseDetailTabs({
               />
             </label>
           </div>
+          {evidenceSaveFailed ? (
+            <p className="m-0 text-sm font-medium text-destructive" role="alert">
+              {localize(
+                text(
+                  "Could not save locally. Try again.",
+                  "Haikuweza kuhifadhiwa kwenye kifaa. Jaribu tena.",
+                  "Impossible d'enregistrer localement. Réessayez.",
+                ),
+                language,
+              )}
+            </p>
+          ) : null}
           <div className="flex justify-end">
             <Button disabled={!canSubmitEvidence} type="submit">
               {localize(uiCopy.addAnonymousEvidence, language)}
@@ -862,6 +922,18 @@ function PromiseDetailTabs({
               />
             </label>
           </div>
+          {contextSaveFailed ? (
+            <p className="m-0 text-sm font-medium text-destructive" role="alert">
+              {localize(
+                text(
+                  "Could not save locally. Try again.",
+                  "Haikuweza kuhifadhiwa kwenye kifaa. Jaribu tena.",
+                  "Impossible d'enregistrer localement. Réessayez.",
+                ),
+                language,
+              )}
+            </p>
+          ) : null}
           <div className="flex justify-end">
             <Button disabled={!canSubmitContextNote} type="submit">
               {localize(uiCopy.addAnonymousContextNote, language)}
@@ -960,6 +1032,7 @@ function PromiseDetailTabs({
 
 function PromiseDetail({
   compact = false,
+  civicData,
   contextNoteRecords,
   evidenceRecords,
   language,
@@ -968,11 +1041,12 @@ function PromiseDetail({
   promise,
 }: {
   compact?: boolean;
+  civicData: CivicData;
   contextNoteRecords: ContextNoteRecord[];
   evidenceRecords: EvidenceRecord[];
   language: LanguageCode;
-  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => void;
-  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
+  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => Promise<void>;
+  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => Promise<void>;
   promise?: PromiseRecord;
 }) {
   if (!promise) {
@@ -1002,6 +1076,7 @@ function PromiseDetail({
   return (
     <PromiseDetailTabs
       compact={compact}
+      civicData={civicData}
       contextNoteRecords={contextNoteRecords}
       evidenceRecords={evidenceRecords}
       language={language}
@@ -1016,23 +1091,84 @@ function App() {
   const [view, setView] = useState<View>("dashboard");
   const [language, setLanguage] = useState<LanguageCode>("en");
   const [selectedCandidateId, setSelectedCandidateId] = useState("cand-amina");
-  const [selectedPromiseId, setSelectedPromiseId] = useState(promises[0]?.id ?? "");
+  const [selectedPromiseId, setSelectedPromiseId] = useState(seededPromises[0]?.id ?? "");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [browserDetailOpen, setBrowserDetailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState<"all" | OfficeCode>("all");
   const [sectorFilter, setSectorFilter] = useState<"all" | SectorCode>("all");
-  const [contextNoteRecords, setContextNoteRecords] = useState<ContextNoteRecord[]>(seededContextNotes);
-  const [evidenceRecords, setEvidenceRecords] = useState<EvidenceRecord[]>(seededEvidence);
-  const [syncQueueRecords, setSyncQueueRecords] = useState<SyncEnvelope[]>(seededSyncQueue);
+  const [databaseReady, setDatabaseReady] = useState(false);
 
   useEffect(() => {
     document.documentElement.lang = localeForLanguage(language);
   }, [language]);
 
+  useEffect(() => {
+    let active = true;
+    void seedManifestoDatabase().finally(() => {
+      if (active) setDatabaseReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const liveData =
+    useLiveQuery(
+      async (): Promise<PersistedAppData> => {
+        if (!databaseReady) return seededPersistedAppData;
+        const [
+          candidateRecords,
+          manifestoRecords,
+          promiseRecords,
+          evidenceRecords,
+          contextNoteRecords,
+          statusHistoryRecords,
+          syncQueueRecords,
+        ] = await Promise.all([
+          db.candidates.toArray(),
+          db.manifestos.toArray(),
+          db.promises.toArray(),
+          db.evidence.toArray(),
+          db.contextNotes.toArray(),
+          db.statusHistory.toArray(),
+          db.syncQueue.toArray(),
+        ]);
+        return {
+          candidates: candidateRecords,
+          manifestos: manifestoRecords,
+          promises: promiseRecords,
+          evidence: evidenceRecords,
+          contextNotes: contextNoteRecords,
+          statusHistory: statusHistoryRecords,
+          syncQueue: syncQueueRecords,
+        };
+      },
+      [databaseReady],
+      seededPersistedAppData,
+    ) ?? seededPersistedAppData;
+
+  const candidateRecords = liveData.candidates;
+  const manifestoRecords = liveData.manifestos;
+  const promiseRecords = liveData.promises;
+  const evidenceRecords = liveData.evidence;
+  const contextNoteRecords = liveData.contextNotes;
+  const statusHistoryRecords = liveData.statusHistory;
+  const syncQueueRecords = liveData.syncQueue;
+
+  const civicData = useMemo<CivicData>(
+    () => ({
+      candidates: candidateRecords,
+      manifestos: manifestoRecords,
+      promises: promiseRecords,
+      statusHistory: statusHistoryRecords,
+    }),
+    [candidateRecords, manifestoRecords, promiseRecords, statusHistoryRecords],
+  );
+
   const followedPromises = useMemo(
-    () => getFollowedPromises(),
-    [],
+    () => getFollowedPromises(civicData),
+    [civicData],
   );
 
   const priorityPromises = useMemo(
@@ -1041,15 +1177,17 @@ function App() {
   );
 
   const filteredCandidates = useMemo(() => {
-    return filterCandidates({ language, officeFilter, query, sectorFilter });
-  }, [language, officeFilter, query, sectorFilter]);
+    return filterCandidates({ data: civicData, language, officeFilter, query, sectorFilter });
+  }, [civicData, language, officeFilter, query, sectorFilter]);
 
   const selectedCandidate =
-    candidates.find((candidate) => candidate.id === selectedCandidateId) ?? candidates[0];
-  const selectedManifesto = getManifestoForCandidate(selectedCandidate.id);
-  const selectedPromises = getPromisesForCandidate(selectedCandidate.id);
+    candidateRecords.find((candidate) => candidate.id === selectedCandidateId) ?? candidateRecords[0] ?? seededCandidates[0];
+  const selectedManifesto = getManifestoForCandidate(selectedCandidate.id, civicData);
+  const selectedPromises = getPromisesForCandidate(selectedCandidate.id, civicData);
   const selectedPromise =
-    promises.find((promise) => promise.id === selectedPromiseId) ?? selectedPromises[0] ?? priorityPromises[0];
+    promiseRecords.find((promise) => promise.id === selectedPromiseId) ??
+    selectedPromises[0] ??
+    priorityPromises[0];
   const selectedStatusCounts = getStatusCounts(selectedPromises);
   const followedStatusCounts = useMemo(
     () => getStatusCounts(followedPromises),
@@ -1057,11 +1195,12 @@ function App() {
   );
   const selectedDashboardPromise =
     priorityPromises.find((promise) => promise.id === selectedPromiseId) ?? priorityPromises[0];
-  const offices = Array.from(new Set(candidates.map((candidate) => candidate.office)));
-  const sectors = Array.from(new Set(promises.map((promise) => promise.sector)));
-  function handleAddEvidence(promiseId: string, submission: EvidenceSubmission) {
+  const offices = Array.from(new Set(candidateRecords.map((candidate) => candidate.office)));
+  const sectors = Array.from(new Set(promiseRecords.map((promise) => promise.sector)));
+
+  async function handleAddEvidence(promiseId: string, submission: EvidenceSubmission) {
     const createdAt = new Date().toISOString();
-    const evidenceId = `evidence-local-${Date.now()}`;
+    const evidenceId = createLocalId("evidence");
     const nextEvidence: EvidenceRecord = {
       id: evidenceId,
       promiseId,
@@ -1089,13 +1228,15 @@ function App() {
       createdAt,
     };
 
-    setEvidenceRecords((currentEvidence) => [nextEvidence, ...currentEvidence]);
-    setSyncQueueRecords((currentQueue) => [...currentQueue, syncEnvelope]);
+    await db.transaction("rw", db.evidence, db.syncQueue, async () => {
+      await db.evidence.add(nextEvidence);
+      await db.syncQueue.add(syncEnvelope);
+    });
   }
 
-  function handleAddContextNote(promiseId: string, submission: ContextNoteSubmission) {
+  async function handleAddContextNote(promiseId: string, submission: ContextNoteSubmission) {
     const createdAt = new Date().toISOString();
-    const contextNoteId = `context-local-${Date.now()}`;
+    const contextNoteId = createLocalId("context");
     const nextContextNote: ContextNoteRecord = {
       id: contextNoteId,
       promiseId,
@@ -1117,14 +1258,16 @@ function App() {
       createdAt,
     };
 
-    setContextNoteRecords((currentContextNotes) => [nextContextNote, ...currentContextNotes]);
-    setSyncQueueRecords((currentQueue) => [...currentQueue, syncEnvelope]);
+    await db.transaction("rw", db.contextNotes, db.syncQueue, async () => {
+      await db.contextNotes.add(nextContextNote);
+      await db.syncQueue.add(syncEnvelope);
+    });
   }
 
   function handleSelectCandidate(candidateId: string) {
     setSelectedCandidateId(candidateId);
     setBrowserDetailOpen(false);
-    const firstPromise = getPromisesForCandidate(candidateId)[0];
+    const firstPromise = getPromisesForCandidate(candidateId, civicData)[0];
     if (firstPromise) {
       setSelectedPromiseId(firstPromise.id);
     }
@@ -1132,8 +1275,8 @@ function App() {
 
   function handleSelectPromise(promiseId: string) {
     setSelectedPromiseId(promiseId);
-    const promise = promises.find((item) => item.id === promiseId);
-    const candidate = promise ? getCandidateForPromise(promise) : undefined;
+    const promise = promiseRecords.find((item) => item.id === promiseId);
+    const candidate = promise ? getCandidateForPromise(promise, civicData) : undefined;
     if (candidate) {
       setSelectedCandidateId(candidate.id);
     }
@@ -1270,6 +1413,7 @@ function App() {
                 {priorityPromises.map((promise) => (
                   <PromiseRow
                     active={selectedDashboardPromise?.id === promise.id}
+                    candidate={getCandidateForPromise(promise, civicData)}
                     key={promise.id}
                     language={language}
                     onSelect={handleSelectDashboardPromise}
@@ -1294,6 +1438,7 @@ function App() {
                     <div className="min-h-0 flex-1 overflow-auto px-1 pb-1">
                       <PromiseDetail
                         compact
+                        civicData={civicData}
                         contextNoteRecords={contextNoteRecords}
                         evidenceRecords={evidenceRecords}
                         language={language}
@@ -1310,6 +1455,7 @@ function App() {
             <aside className="sticky top-6 min-w-0 max-[820px]:hidden" aria-label={localize(uiCopy.promiseDetail, language)}>
               <PromiseDetail
                 compact
+                civicData={civicData}
                 contextNoteRecords={contextNoteRecords}
                 evidenceRecords={evidenceRecords}
                 language={language}
@@ -1378,6 +1524,7 @@ function App() {
                   <CandidateCard
                     active={selectedCandidate.id === candidate.id}
                     candidate={candidate}
+                    civicData={civicData}
                     key={candidate.id}
                     language={language}
                     onSelect={handleSelectCandidate}
@@ -1457,6 +1604,7 @@ function App() {
                           .map((promise) => (
                             <PromiseRow
                               active={selectedPromise?.id === promise.id}
+                              candidate={getCandidateForPromise(promise, civicData)}
                               key={promise.id}
                               language={language}
                               onSelect={handleSelectManifestoPromise}
@@ -1478,6 +1626,7 @@ function App() {
                       <div className="min-h-0 flex-1 overflow-auto px-1 pb-1">
                         <PromiseDetail
                           compact
+                          civicData={civicData}
                           contextNoteRecords={contextNoteRecords}
                           evidenceRecords={evidenceRecords}
                           language={language}
@@ -1493,6 +1642,7 @@ function App() {
                 <aside className="sticky top-6 min-w-0 max-[1120px]:hidden" aria-label={localize(uiCopy.promiseDetail, language)}>
                   <PromiseDetail
                     compact
+                    civicData={civicData}
                     contextNoteRecords={contextNoteRecords}
                     evidenceRecords={evidenceRecords}
                     language={language}

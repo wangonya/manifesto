@@ -2,7 +2,7 @@ import { ChevronRight, CheckCircle2, CalendarDays, UserRound } from "lucide-reac
 
 import { StatusBadge } from "@/components/app/status-badge";
 import { cn } from "@/lib/utils";
-import type { PromiseRecord } from "@/data";
+import type { Candidate, PromiseRecord } from "@/data";
 import { getCandidateForPromise } from "@/domain";
 import { localize, statusLabels, uiCopy, type LanguageCode } from "@/i18n";
 
@@ -14,13 +14,20 @@ function formatDate(value: string, language: LanguageCode) {
 
 type PromiseRowProps = {
   active?: boolean;
+  candidate?: Candidate;
   language: LanguageCode;
   onSelect: (promiseId: string) => void;
   promise: PromiseRecord;
 };
 
-export function PromiseRow({ active = false, language, onSelect, promise }: PromiseRowProps) {
-  const candidate = getCandidateForPromise(promise);
+export function PromiseRow({
+  active = false,
+  candidate: providedCandidate,
+  language,
+  onSelect,
+  promise,
+}: PromiseRowProps) {
+  const candidate = providedCandidate ?? getCandidateForPromise(promise);
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
   const promiseTitle = localize(promise.title, language);
 

@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { db } from "./db";
 
 const originalMatchMedia = window.matchMedia;
 
@@ -37,6 +38,7 @@ async function openDetailTab(
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: originalMatchMedia,
@@ -270,15 +272,39 @@ describe("Manifesto app", () => {
     await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
 
     expect(
-      within(detail).getByText("Night-shift nurse roster was posted at the county clinic gate."),
+      await within(detail).findByText("Night-shift nurse roster was posted at the county clinic gate."),
     ).toBeInTheDocument();
     expect(within(detail).getAllByText("Clinic watch group").length).toBeGreaterThan(1);
     expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
     expect(within(detail).getByText("Created offline")).toBeInTheDocument();
-    expect(screen.getByText("2 queued")).toBeInTheDocument();
+    expect(await screen.findByText("2 queued")).toBeInTheDocument();
     expect(sourceSelect).toHaveValue("");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous evidence" })).toBeDisabled();
+  });
+
+  it("keeps evidence form values when local persistence fails", async () => {
+    const { user } = renderApp();
+    const note = "Night-shift evidence should remain in the form.";
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, detail, "Evidence");
+    const sourceSelect = within(detail).getByLabelText("Source label");
+    const noteInput = within(detail).getByLabelText("Evidence note");
+
+    await user.selectOptions(sourceSelect, "clinic-watch-group");
+    await user.type(noteInput, note);
+    vi.spyOn(db.evidence, "add").mockRejectedValueOnce(new Error("blocked"));
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
+
+    expect(await within(detail).findByRole("alert")).toHaveTextContent(
+      "Could not save locally. Try again.",
+    );
+    expect(sourceSelect).toHaveValue("clinic-watch-group");
+    expect(noteInput).toHaveValue(note);
+    expect(await screen.findByText("1 queued")).toBeInTheDocument();
   });
 
   it("adds anonymous context to the selected promise and queues it for sync", async () => {
@@ -296,11 +322,11 @@ describe("Manifesto app", () => {
     await user.type(noteInput, contextNote);
     await user.click(within(detail).getByRole("button", { name: "Add anonymous context note" }));
 
-    expect(within(detail).getByText(contextNote)).toBeInTheDocument();
+    expect(await within(detail).findByText(contextNote)).toBeInTheDocument();
     expect(within(detail).getAllByText("Needs verification").length).toBeGreaterThan(0);
     expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
     expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
-    expect(screen.getByText("2 queued")).toBeInTheDocument();
+    expect(await screen.findByText("2 queued")).toBeInTheDocument();
     expect(confidenceSelect).toHaveValue("community report");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous context note" })).toBeDisabled();
@@ -313,5 +339,69 @@ describe("Manifesto app", () => {
     });
     await openDetailTab(user, browserDetail, "Context");
     expect(within(browserDetail).getByText(contextNote)).toBeInTheDocument();
+  });
+
+  it("keeps context form values when local persistence fails", async () => {
+    const { user } = renderApp();
+    const contextNote = "Residents say the staffing budget is still unresolved.";
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, detail, "Context");
+    const confidenceSelect = within(detail).getByLabelText("Confidence label");
+    const noteInput = within(detail).getByLabelText("Context note");
+
+    await user.selectOptions(confidenceSelect, "needs verification");
+    await user.type(noteInput, contextNote);
+    vi.spyOn(db.contextNotes, "add").mockRejectedValueOnce(new Error("blocked"));
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous context note" }));
+
+    expect(await within(detail).findByRole("alert")).toHaveTextContent(
+      "Could not save locally. Try again.",
+    );
+    expect(confidenceSelect).toHaveValue("needs verification");
+    expect(noteInput).toHaveValue(contextNote);
+    expect(await screen.findByText("1 queued")).toBeInTheDocument();
+  });
+
+  it("persists locally entered evidence after the app remounts", async () => {
+    const { user, unmount } = renderApp();
+    const evidenceNote = "County clinic gate has a posted night-shift roster.";
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, detail, "Evidence");
+    await user.selectOptions(within(detail).getByLabelText("Source label"), "clinic-watch-group");
+    await user.type(within(detail).getByLabelText("Evidence note"), evidenceNote);
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
+
+    expect(await within(detail).findByText(evidenceNote)).toBeInTheDocument();
+
+    unmount();
+
+    const nextRender = renderApp();
+    const remountedDetail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(nextRender.user, remountedDetail, "Evidence");
+
+    expect(await within(remountedDetail).findByText(evidenceNote)).toBeInTheDocument();
+    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+  });
+
+  it("keeps an intentionally empty sync queue instead of restoring seeded queue rows", async () => {
+    renderApp();
+
+    await waitFor(async () => {
+      await expect(db.syncQueue.count()).resolves.toBe(1);
+    });
+    await act(async () => {
+      await db.syncQueue.clear();
+    });
+
+    expect(await screen.findByText("0 queued")).toBeInTheDocument();
+    expect(screen.queryByText("1 queued")).not.toBeInTheDocument();
   });
 });
