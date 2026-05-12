@@ -10,6 +10,14 @@ function renderApp() {
   };
 }
 
+async function openDetailTab(
+  user: ReturnType<typeof userEvent.setup>,
+  detail: HTMLElement,
+  tabName: string | RegExp,
+) {
+  await user.click(within(detail).getByRole("tab", { name: tabName }));
+}
+
 describe("Manifesto app", () => {
   it("renders the dashboard with followed promises, status counts, and privacy indicators", () => {
     renderApp();
@@ -113,8 +121,12 @@ describe("Manifesto app", () => {
     const roadDetail = screen.getByRole("region", {
       name: "Grade feeder roads before harvest season",
     });
-    expect(within(roadDetail).getByText(/Two feeder roads remain impassable/)).toBeInTheDocument();
+    expect(within(roadDetail).getByText(/Farmers were promised graded feeder roads/)).toBeInTheDocument();
+
+    await openDetailTab(user, roadDetail, "Evidence");
     expect(within(roadDetail).getAllByText("Anonymous resident report").length).toBeGreaterThan(0);
+
+    await openDetailTab(user, roadDetail, "History");
     expect(within(roadDetail).getByText(/The harvest-season deadline passed/)).toBeInTheDocument();
   });
 
@@ -126,6 +138,10 @@ describe("Manifesto app", () => {
     await user.click(screen.getByRole("button", { name: /following dashboard/i }));
 
     const dashboard = screen.getByRole("region", { name: "Following dashboard" });
+    const detail = within(dashboard).getByRole("region", {
+      name: "Grade feeder roads before harvest season",
+    });
+    await openDetailTab(user, detail, "History");
     expect(within(dashboard).getByText(/The harvest-season deadline passed/)).toBeInTheDocument();
   });
 
@@ -135,6 +151,7 @@ describe("Manifesto app", () => {
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
     });
+    await openDetailTab(user, detail, "Evidence");
     const submitButton = within(detail).getByRole("button", { name: "Add anonymous evidence" });
     const sourceSelect = within(detail).getByRole("combobox", { name: "Source label" });
 
@@ -159,6 +176,7 @@ describe("Manifesto app", () => {
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
     });
+    await openDetailTab(user, detail, "Context");
     const submitButton = within(detail).getByRole("button", { name: "Add anonymous context note" });
 
     expect(
@@ -185,6 +203,7 @@ describe("Manifesto app", () => {
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
     });
+    await openDetailTab(user, detail, "Evidence");
     const sourceSelect = within(detail).getByLabelText("Source label");
     const noteInput = within(detail).getByLabelText("Evidence note");
 
@@ -211,6 +230,7 @@ describe("Manifesto app", () => {
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
     });
+    await openDetailTab(user, detail, "Context");
     const confidenceSelect = within(detail).getByLabelText("Confidence label");
     const noteInput = within(detail).getByLabelText("Context note");
     const contextNote = "Residents say night staffing depends on the next county budget hearing.";
@@ -231,6 +251,10 @@ describe("Manifesto app", () => {
     await user.click(screen.getByRole("button", { name: /manifesto browser/i }));
 
     const browser = screen.getByRole("region", { name: "Manifesto browser" });
+    const browserDetail = within(browser).getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, browserDetail, "Context");
     expect(within(browser).getAllByText(contextNote).length).toBeGreaterThan(1);
   });
 });
