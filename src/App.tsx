@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
+import { StatusBadge } from "@/components/app/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   candidates,
   contextNotes as seededContextNotes,
@@ -440,7 +445,7 @@ function StatusPill({
   children: ReactNode;
   tone: PromiseStatus;
 }) {
-  return <span className={`status-pill status-pill--${tone}`}>{children}</span>;
+  return <StatusBadge tone={tone}>{children}</StatusBadge>;
 }
 
 function PromiseCard({
@@ -466,16 +471,18 @@ function PromiseCard({
       </div>
       <h3>
         {onSelect ? (
-          <button
+          <Button
             aria-label={`${localize(uiCopy.viewDetailsFor, language)} ${promiseTitle}`}
             aria-pressed={active}
-            className="promise-card__title-button"
+            className="promise-card__title-button h-auto p-0 text-left hover:bg-transparent"
             onClick={() => onSelect(promise.id)}
+            size="sm"
             type="button"
+            variant="ghost"
           >
             <span>{promiseTitle}</span>
             <Icon name="chevron" />
-          </button>
+          </Button>
         ) : (
           promiseTitle
         )}
@@ -752,7 +759,7 @@ function PromiseDetail({
             </label>
             <label className="form-field form-field--wide">
               <span>{localize(uiCopy.evidenceNote, language)}</span>
-              <textarea
+              <Textarea
                 onChange={(event) => setEvidenceNote(event.target.value)}
                 placeholder={localize(uiCopy.evidencePlaceholder, language)}
                 value={evidenceNote}
@@ -760,9 +767,9 @@ function PromiseDetail({
             </label>
           </div>
           <div className="evidence-form__actions">
-            <button disabled={!canSubmitEvidence} type="submit">
+            <Button disabled={!canSubmitEvidence} type="submit">
               {localize(uiCopy.addAnonymousEvidence, language)}
-            </button>
+            </Button>
           </div>
         </form>
         {promiseEvidence.length > 0 ? (
@@ -850,7 +857,7 @@ function PromiseDetail({
             </label>
             <label className="form-field form-field--wide">
               <span>{localize(uiCopy.contextNote, language)}</span>
-              <textarea
+              <Textarea
                 onChange={(event) => setContextNote(event.target.value)}
                 placeholder={localize(
                   text(
@@ -865,9 +872,9 @@ function PromiseDetail({
             </label>
           </div>
           <div className="evidence-form__actions">
-            <button disabled={!canSubmitContextNote} type="submit">
+            <Button disabled={!canSubmitContextNote} type="submit">
               {localize(uiCopy.addAnonymousContextNote, language)}
-            </button>
+            </Button>
           </div>
         </form>
         {promiseContextNotes.length > 0 ? (
@@ -1131,42 +1138,54 @@ function App() {
                 ))}
               </select>
             </label>
-            <span>
+            <Badge className="header-badge" variant="outline">
               <Icon name="shield" />
               {localize(uiCopy.anonymousByDefault, language)}
-            </span>
-            <span>
+            </Badge>
+            <Badge className="header-badge" variant="outline">
               <Icon name="signal" />
               {syncQueueRecords.length} {localize(uiCopy.queued, language)}
-            </span>
+            </Badge>
           </div>
         </div>
       </header>
 
       <main className="main-content">
-        <section className="intro-panel" aria-labelledby="page-title">
-          <p className="eyebrow">{localize(uiCopy.introEyebrow, language)}</p>
-          <h2 id="page-title">{localize(uiCopy.introTitle, language)}</h2>
-          <p>{localize(uiCopy.introBody, language)}</p>
-        </section>
+        <div className="view-header">
+          <div>
+            <p className="eyebrow">{localize(uiCopy.voiceAndAccountability, language)}</p>
+            <h2 id="page-title">
+              {view === "dashboard"
+                ? localize(uiCopy.followingDashboard, language)
+                : localize(uiCopy.manifestoBrowser, language)}
+            </h2>
+            <p>
+              {view === "dashboard"
+                ? localize(uiCopy.dashboardHeaderBody, language)
+                : localize(uiCopy.manifestoHeaderBody, language)}
+            </p>
+          </div>
+        </div>
 
         <nav className="view-tabs" aria-label={localize(uiCopy.primaryViews, language)}>
-          <button
+          <Button
             className={view === "dashboard" ? "is-active" : ""}
             onClick={() => handleSelectView("dashboard")}
             type="button"
+            variant="outline"
           >
             <Icon name="pin" />
             {localize(uiCopy.followingDashboard, language)}
-          </button>
-          <button
+          </Button>
+          <Button
             className={view === "manifestos" ? "is-active" : ""}
             onClick={() => handleSelectView("manifestos")}
             type="button"
+            variant="outline"
           >
             <Icon name="book" />
             {localize(uiCopy.manifestoBrowser, language)}
-          </button>
+          </Button>
         </nav>
 
         {view === "dashboard" ? (
@@ -1307,7 +1326,7 @@ function App() {
               <label className="search-field">
                 <Icon name="search" />
                 <span className="sr-only">{localize(uiCopy.searchCandidatesAndPromises, language)}</span>
-                <input
+                <Input
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={localize(uiCopy.searchPlaceholder, language)}
                   type="search"

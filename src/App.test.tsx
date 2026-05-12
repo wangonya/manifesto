@@ -17,7 +17,11 @@ describe("Manifesto app", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Manifesto" })).toBeInTheDocument();
     expect(screen.getByText("Anonymous by default")).toBeInTheDocument();
     expect(screen.getByText("1 queued")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Following dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Priority promises" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("Follow the promises that matter, without losing the wider record."),
+    ).not.toBeInTheDocument();
 
     const dashboard = screen.getByRole("region", { name: "Following dashboard" });
     expect(within(dashboard).getByText("Repair stalled boreholes in dry wards")).toBeInTheDocument();

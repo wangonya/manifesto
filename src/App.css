@@ -129,7 +129,7 @@ button {
 
 .brand,
 .header-status,
-.header-status span,
+.header-status .header-badge,
 .view-tabs,
 .view-tabs button,
 .promise-card__topline,
@@ -189,7 +189,7 @@ button {
   justify-content: flex-end;
 }
 
-.header-status span {
+.header-status .header-badge {
   gap: 7px;
   border: 1px solid #d8d4c7;
   border-radius: 999px;
@@ -232,7 +232,6 @@ button {
   padding: 32px 0 64px;
 }
 
-.intro-panel,
 .paper-panel,
 .promise-card,
 .candidate-card {
@@ -241,12 +240,7 @@ button {
   background: #fffdf8;
 }
 
-.intro-panel {
-  max-width: 900px;
-  padding: 28px;
-}
-
-.intro-panel h2,
+.view-header h2,
 .section-heading h2,
 .candidate-profile h2,
 .promise-card h3,
@@ -257,19 +251,6 @@ button {
   letter-spacing: 0;
 }
 
-.intro-panel h2 {
-  max-width: 760px;
-  font-size: clamp(2rem, 4vw, 4.2rem);
-  line-height: 1.02;
-}
-
-.intro-panel p:not(.eyebrow) {
-  max-width: 760px;
-  margin: 18px 0 0;
-  color: #536058;
-  font-size: 1.02rem;
-}
-
 .eyebrow {
   margin: 0 0 10px;
   color: #738078;
@@ -277,6 +258,53 @@ button {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.view-header {
+  border-bottom: 1px solid #e3dfd2;
+  padding-bottom: 20px;
+}
+
+.view-header h2 {
+  font-size: clamp(1.55rem, 3vw, 2.5rem);
+  line-height: 1.08;
+}
+
+.view-header p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: #536058;
+  font-size: 0.98rem;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.status-count {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid #e2ded2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fffdf8;
+}
+
+.status-count [data-slot="badge"] {
+  max-width: 100%;
+  justify-self: start;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.status-count strong {
+  color: #1c2c23;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .view-tabs {
@@ -388,26 +416,13 @@ button {
   gap: 10px;
 }
 
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-}
-
 .status-count {
-  min-height: 86px;
-  border: 1px solid #e2ded2;
-  border-radius: 8px;
-  padding: 12px;
-  background: #faf8f0;
+  min-height: 88px;
 }
 
 .status-count strong {
   display: block;
-  margin-top: 12px;
-  color: #1c2c23;
-  font-size: 1.6rem;
-  line-height: 1;
+  margin-top: 10px;
 }
 
 .status-pill {
@@ -987,6 +1002,10 @@ button {
     grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.5fr);
   }
 
+  .view-header {
+    grid-template-columns: 1fr;
+  }
+
   .context-rail {
     grid-column: 1 / -1;
     position: static;
@@ -1030,7 +1049,6 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .intro-panel,
   .paper-panel,
   .promise-card {
     padding: 22px;
@@ -1051,11 +1069,10 @@ button {
     align-items: flex-start;
   }
 
-  .intro-panel h2 {
-    font-size: 2rem;
+  .view-header h2 {
+    font-size: 1.75rem;
   }
 
-  .intro-panel,
   .paper-panel,
   .promise-card {
     padding: 18px;
