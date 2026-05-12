@@ -141,16 +141,15 @@ export const uiCopy = {
   history: text("History", "Historia", "Historique"),
   identityHidden: text("Identity hidden", "Utambulisho umefichwa", "Identité masquée"),
   interests: text("Interests", "Maslahi", "Centres d'intérêt"),
-  introBody: text(
-    "Seeded fictional candidates, manifestos, promises, evidence, context notes, and status history are visible for the demo. Anonymous evidence and context submissions are queued locally for this session before persistence arrives in a later milestone.",
-    "Wagombea wa mfano, manifesto, ahadi, ushahidi, madokezo ya muktadha, na historia ya hali vinaonekana kwenye demo. Ushahidi na madokezo bila majina hupangwa ndani ya kifaa kwa kipindi hiki kabla ya uhifadhi wa kudumu kuongezwa.",
-    "Des candidats fictifs, manifestes, promesses, preuves, notes de contexte et historiques de statut sont visibles pour la démonstration. Les preuves et contextes anonymes sont mis en file localement pour cette session avant l'arrivée de la persistance.",
+  dashboardHeaderBody: text(
+    "Track followed promises, evidence, and anonymous context from one compact workspace.",
+    "Fuatilia ahadi unazofuata, ushahidi, na muktadha bila majina kutoka sehemu moja fupi.",
+    "Suivez les promesses suivies, les preuves et le contexte anonyme dans un espace compact.",
   ),
-  introEyebrow: text("Voice & accountability", "Sauti na uwajibikaji", "Voix et redevabilité"),
-  introTitle: text(
-    "Follow the promises that matter, without losing the wider record.",
-    "Fuatilia ahadi muhimu bila kupoteza rekodi pana.",
-    "Suivez les promesses importantes sans perdre la vue d'ensemble.",
+  manifestoHeaderBody: text(
+    "Search current and archived manifestos without losing the selected promise record.",
+    "Tafuta manifesto za sasa na zilizohifadhiwa bila kupoteza rekodi ya ahadi uliyochagua.",
+    "Recherchez les manifestes actuels et archivés sans perdre la promesse sélectionnée.",
   ),
   language: text("Language", "Lugha", "Langue"),
   linkedEvidencePlural: text("linked evidence items", "vipengee vya ushahidi vilivyounganishwa", "éléments de preuve liés"),
@@ -228,6 +227,7 @@ export const uiCopy = {
     "Tafsiri inasubiri",
     "Traduction en attente",
   ),
+  voiceAndAccountability: text("Voice & accountability", "Sauti na uwajibikaji", "Voix et redevabilité"),
   viewDetailsFor: text("View details for", "Tazama maelezo ya", "Voir les détails de"),
   watched: text("Watched", "Zinazofuatiliwa", "Surveillés"),
 };
