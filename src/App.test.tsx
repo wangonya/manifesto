@@ -97,4 +97,54 @@ describe("Manifesto app", () => {
     const dashboard = screen.getByRole("region", { name: "Following dashboard" });
     expect(within(dashboard).getByText(/The harvest-season deadline passed/)).toBeInTheDocument();
   });
+
+  it("requires a source label and note before adding anonymous evidence", async () => {
+    const { user } = renderApp();
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    const submitButton = within(detail).getByRole("button", { name: "Add anonymous evidence" });
+    const sourceSelect = within(detail).getByRole("combobox", { name: "Source label" });
+
+    expect(submitButton).toBeDisabled();
+    expect(within(sourceSelect).getByRole("option", { name: "Clinic watch group" })).toBeInTheDocument();
+    expect(
+      within(sourceSelect).getByRole("option", { name: "County health notice board" }),
+    ).toBeInTheDocument();
+
+    await user.type(within(detail).getByLabelText("Evidence note"), "Clinic is open on weekends only.");
+
+    expect(submitButton).toBeDisabled();
+
+    await user.selectOptions(sourceSelect, "Clinic watch group");
+
+    expect(submitButton).toBeEnabled();
+  });
+
+  it("adds anonymous evidence to the selected promise and queues it for sync", async () => {
+    const { user } = renderApp();
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    const sourceSelect = within(detail).getByLabelText("Source label");
+    const noteInput = within(detail).getByLabelText("Evidence note");
+
+    await user.selectOptions(within(detail).getByLabelText("Evidence type"), "public_record");
+    await user.selectOptions(sourceSelect, "Clinic watch group");
+    await user.type(noteInput, "Night-shift nurse roster was posted at the county clinic gate.");
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
+
+    expect(
+      within(detail).getByText("Night-shift nurse roster was posted at the county clinic gate."),
+    ).toBeInTheDocument();
+    expect(within(detail).getAllByText("Clinic watch group").length).toBeGreaterThan(1);
+    expect(within(detail).getByText("Anonymous")).toBeInTheDocument();
+    expect(within(detail).getByText("Created offline")).toBeInTheDocument();
+    expect(screen.getByText("2 queued")).toBeInTheDocument();
+    expect(sourceSelect).toHaveValue("");
+    expect(noteInput).toHaveValue("");
+    expect(within(detail).getByRole("button", { name: "Add anonymous evidence" })).toBeDisabled();
+  });
 });

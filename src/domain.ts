@@ -5,6 +5,7 @@ import {
   promises,
   statusHistory,
   type Candidate,
+  type Evidence as EvidenceRecord,
   type PromiseRecord,
   type PromiseStatus,
 } from "./data";
@@ -51,10 +52,15 @@ export function getStatusCounts(items: PromiseRecord[]) {
   );
 }
 
-export function getEvidenceForPromise(promiseId: string) {
-  return evidence
+export function getEvidenceForPromise(promiseId: string, evidenceRecords: EvidenceRecord[] = evidence) {
+  return evidenceRecords
     .filter((item) => item.promiseId === promiseId)
-    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+    .sort((first, second) => {
+      const firstIsLocal = first.id.startsWith("evidence-local-");
+      const secondIsLocal = second.id.startsWith("evidence-local-");
+      if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
+      return second.createdAt.localeCompare(first.createdAt);
+    });
 }
 
 export function getStatusHistoryForPromise(promiseId: string) {
