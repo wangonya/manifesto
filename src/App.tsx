@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   candidates,
   contextNotes as seededContextNotes,
@@ -89,6 +90,41 @@ const confidenceLabelKeys: ContextNoteRecord["confidenceLabel"][] = [
   "needs verification",
   "public record",
 ];
+
+const pageWidthClass =
+  "mx-auto w-[calc(100%_-_3rem)] max-w-[1320px] max-[820px]:w-[calc(100%_-_2rem)] max-[520px]:w-[calc(100%_-_1.5rem)]";
+const panelClass = "rounded-lg border border-border bg-card p-6 text-card-foreground max-[820px]:p-5 max-[520px]:p-4";
+const inlineDetailPanelClass = "border-[#b7d2c2] bg-[#fbfefb] shadow-[inset_4px_0_0_#9bc5aa]";
+const eyebrowClass = "mb-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground";
+const sectionHeadingClass = "mb-4";
+const sectionTitleClass = "m-0 text-[1.15rem] leading-tight tracking-normal text-[#17241d]";
+const iconBoxClass = "grid shrink-0 place-items-center rounded-lg border border-[#c9d8ce] bg-[#edf5ee] text-primary";
+const factGridClass = "grid grid-cols-1 gap-3 min-[821px]:grid-cols-4";
+const manifestoFactGridClass = "mt-4 grid grid-cols-1 gap-3 min-[821px]:grid-cols-3";
+const factItemClass = "border-t border-[#e4dfd3] pt-3";
+const factTermClass =
+  "flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-muted-foreground";
+const factDefinitionClass = "mt-1 text-sm font-semibold text-foreground";
+const detailBlockClass = "grid gap-3 border-t border-[#e6e1d5] pt-4 first:border-t-0 first:pt-0";
+const detailBlockHeadingClass =
+  "flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
+const detailCountClass =
+  "rounded-full border border-input bg-[#faf8f0] px-2.5 py-1 text-xs font-extrabold uppercase text-muted-foreground";
+const detailListClass = "grid list-none gap-2.5 p-0";
+const detailRowClass =
+  "grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-[#e6e1d5] pt-3 first:border-t-0 first:pt-0 max-[520px]:grid-cols-1";
+const detailIconClass = "grid size-8 place-items-center rounded-lg border border-[#d3ddce] bg-card text-muted-foreground";
+const detailToplineClass =
+  "flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
+const tagListClass = "mt-2 flex flex-wrap gap-1.5";
+const tagClass = "rounded-full border border-[#e0dbce] bg-card px-2 py-1 text-xs font-bold text-muted-foreground";
+const emptyCopyClass = "m-0 border-t border-[#e6e1d5] pt-3.5 text-sm text-muted-foreground";
+const evidenceFormClass = "grid gap-3 rounded-lg border border-border bg-[#faf8f0] p-3.5";
+const evidenceFormToplineClass =
+  "flex items-center justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
+const evidenceFormGridClass = "grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 max-[520px]:grid-cols-1";
+const formFieldClass = "grid gap-1.5 text-sm font-bold text-muted-foreground";
+const nativeFieldClass = "w-full rounded-lg border border-input bg-card px-3 py-2.5 text-foreground";
 
 type SourceLabelOption = {
   id: string;
@@ -359,7 +395,7 @@ function Icon({ name }: { name: IconName }) {
   return (
     <svg
       aria-hidden="true"
-      className="icon"
+      className="size-[1.05em]"
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
@@ -411,20 +447,23 @@ function CandidateCard({
 
   return (
     <button
-      className={`candidate-card ${active ? "is-active" : ""} ${compact ? "candidate-card--compact" : ""}`}
+      className={cn(
+        "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] gap-3 rounded-lg border border-border bg-card p-3.5 text-left text-card-foreground transition hover:border-[#b7d2c2] hover:bg-[#f6fbf6]",
+        active && "border-[#b7d2c2] bg-[#f6fbf6]",
+      )}
       onClick={() => onSelect(candidate.id)}
       type="button"
     >
-      <span className="candidate-card__icon">
+      <span className={cn(iconBoxClass, "size-8")}>
         <Icon name={isElectedCandidate(candidate) ? "pin" : "archive"} />
       </span>
-      <span className="candidate-card__body">
-        <span className="candidate-card__name">{candidate.name}</span>
-        <span className="candidate-card__meta">
+      <span>
+        <span className="block font-bold text-[#1f2d25]">{candidate.name}</span>
+        <span className="mt-0.5 block text-sm text-muted-foreground">
           {localize(officeLabels[candidate.office], language)} |{" "}
           {localize(regionLabels[candidate.region], language)}
         </span>
-        <span className="candidate-card__tags">
+        <span className="mt-2.5 flex flex-wrap gap-1.5">
           <StatusPill tone={isElectedCandidate(candidate) ? "kept" : "not_started"}>
             {candidateStatusLabel}
           </StatusPill>
@@ -440,7 +479,7 @@ function CandidateCard({
           ) : null}
         </span>
       </span>
-      <span className="candidate-card__arrow">
+      <span className={cn("text-muted-foreground", compact && "hidden")}>
         <Icon name="chevron" />
       </span>
     </button>
@@ -455,7 +494,7 @@ function StatusPill({
   tone: PromiseStatus;
 }) {
   return (
-    <StatusBadge className="status-pill" tone={tone}>
+    <StatusBadge className="w-fit px-2 py-1 text-[0.68rem] font-extrabold leading-none tracking-[0.08em]" tone={tone}>
       {children}
     </StatusBadge>
   );
@@ -551,80 +590,96 @@ function PromiseDetailTabs({
 
   return (
     <section
-      className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
+      className={cn("grid gap-5", panelClass, compact && inlineDetailPanelClass)}
       aria-labelledby={`detail-${promise.id}`}
     >
-      <div className="promise-detail__header">
+      <div className="flex items-start justify-between gap-4 max-[520px]:grid max-[520px]:justify-stretch">
         <div>
-          <p className="eyebrow">{localize(uiCopy.promiseDetail, language)}</p>
-          <h2 id={`detail-${promise.id}`}>{promiseTitle}</h2>
-          <p>{localize(promise.summary, language)}</p>
+          <p className={eyebrowClass}>{localize(uiCopy.promiseDetail, language)}</p>
+          <h2 className="m-0 text-[clamp(1.35rem,2vw,2rem)] leading-tight tracking-normal text-[#17241d]" id={`detail-${promise.id}`}>
+            {promiseTitle}
+          </h2>
+          <p className="mt-2.5 text-muted-foreground">{localize(promise.summary, language)}</p>
         </div>
         <StatusPill tone={promise.status}>{localize(statusLabels[promise.status], language)}</StatusPill>
       </div>
 
-      <Tabs className="promise-detail__tabs" defaultValue="overview">
-        <TabsList className="promise-detail__tab-list" aria-label={localize(uiCopy.promiseDetail, language)}>
-          <TabsTrigger value="overview">{localize(uiCopy.overview, language)}</TabsTrigger>
-          <TabsTrigger value="evidence">{localize(uiCopy.evidence, language)}</TabsTrigger>
-          <TabsTrigger value="context">{localize(uiCopy.context, language)}</TabsTrigger>
-          <TabsTrigger value="history">{localize(uiCopy.history, language)}</TabsTrigger>
+      <Tabs className="grid gap-4" defaultValue="overview">
+        <TabsList
+          className="grid !h-auto min-h-10 w-full max-w-full grid-cols-2 gap-1 overflow-visible p-1 min-[521px]:grid-cols-4"
+          aria-label={localize(uiCopy.promiseDetail, language)}
+        >
+          <TabsTrigger className="min-h-8 min-w-0 !whitespace-normal px-2 text-center leading-tight" value="overview">
+            {localize(uiCopy.overview, language)}
+          </TabsTrigger>
+          <TabsTrigger className="min-h-8 min-w-0 !whitespace-normal px-2 text-center leading-tight" value="evidence">
+            {localize(uiCopy.evidence, language)}
+          </TabsTrigger>
+          <TabsTrigger className="min-h-8 min-w-0 !whitespace-normal px-2 text-center leading-tight" value="context">
+            {localize(uiCopy.context, language)}
+          </TabsTrigger>
+          <TabsTrigger className="min-h-8 min-w-0 !whitespace-normal px-2 text-center leading-tight" value="history">
+            {localize(uiCopy.history, language)}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent className="promise-detail__tab-content" value="overview">
-          <dl className="detail-facts" aria-label={localize(uiCopy.promiseFacts, language)}>
-            <div>
-              <dt>
+        <TabsContent className="grid gap-4" value="overview">
+          <dl className={factGridClass} aria-label={localize(uiCopy.promiseFacts, language)}>
+            <div className={factItemClass}>
+              <dt className={factTermClass}>
                 <Icon name="user" />
                 {localize(uiCopy.candidate, language)}
               </dt>
-              <dd>{candidate?.name ?? "-"}</dd>
+              <dd className={factDefinitionClass}>{candidate?.name ?? "-"}</dd>
             </div>
-            <div>
-              <dt>
+            <div className={factItemClass}>
+              <dt className={factTermClass}>
                 <Icon name="map" />
                 {localize(uiCopy.place, language)}
               </dt>
-              <dd>{localize(promise.location, language)}</dd>
+              <dd className={factDefinitionClass}>{localize(promise.location, language)}</dd>
             </div>
-            <div>
-              <dt>
+            <div className={factItemClass}>
+              <dt className={factTermClass}>
                 <Icon name="calendar" />
                 {localize(uiCopy.deadline, language)}
               </dt>
-              <dd>{formatDate(promise.deadline, language)}</dd>
+              <dd className={factDefinitionClass}>{formatDate(promise.deadline, language)}</dd>
             </div>
-            <div>
-              <dt>
+            <div className={factItemClass}>
+              <dt className={factTermClass}>
                 <Icon name="book" />
                 {localize(uiCopy.source, language)}
               </dt>
-              <dd>{manifesto ? localize(manifesto.sourceLabel, language) : "-"}</dd>
+              <dd className={factDefinitionClass}>{manifesto ? localize(manifesto.sourceLabel, language) : "-"}</dd>
             </div>
           </dl>
 
-          <div className="detail-block">
-        <div className="detail-block__heading">
+          <div className={detailBlockClass}>
+        <div className={detailBlockHeadingClass}>
           <div>
-            <p className="eyebrow">{localize(uiCopy.checkPoints, language)}</p>
-            <h3>
+            <p className={eyebrowClass}>{localize(uiCopy.checkPoints, language)}</p>
+            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">
               {completed} / {promise.checkpoints.length} {localize(uiCopy.complete, language)}
             </h3>
           </div>
-          <span className="detail-count">{localize(sectorLabels[promise.sector], language)}</span>
+          <span className={detailCountClass}>{localize(sectorLabels[promise.sector], language)}</span>
         </div>
-        <ol className="checkpoint-list">
+        <ol className="grid list-none gap-2.5 p-0">
           {promise.checkpoints.map((checkpoint) => (
             <li
-              className={`checkpoint-item ${checkpoint.complete ? "is-complete" : ""}`}
+              className={cn(
+                "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#e4dfd3] bg-[#faf8f0] p-3 max-[520px]:grid-cols-1",
+                checkpoint.complete && "border-[#c8dacd] bg-[#f0f8f2]",
+              )}
               key={`${promise.id}-${localize(checkpoint.label, "en")}`}
             >
-              <span className="checkpoint-item__marker">
+              <span className={cn("grid size-8 place-items-center rounded-lg border border-[#d3ddce] bg-card text-muted-foreground", checkpoint.complete && "border-[#b8d4c0] bg-[#e5f2e8] text-primary")}>
                 <Icon name={checkpoint.complete ? "check" : "clock"} />
               </span>
               <div>
-                <strong>{localize(checkpoint.label, language)}</strong>
-                <span>
+                <strong className="block text-sm font-bold text-foreground">{localize(checkpoint.label, language)}</strong>
+                <span className="mt-0.5 block text-sm text-muted-foreground">
                   {localize(uiCopy.due, language)} {formatDate(checkpoint.dueDate, language)}
                 </span>
               </div>
@@ -639,31 +694,32 @@ function PromiseDetailTabs({
           </div>
         </TabsContent>
 
-        <TabsContent className="promise-detail__tab-content" value="evidence">
-          <div className="detail-block">
-        <div className="detail-block__heading">
+        <TabsContent className="grid gap-4" value="evidence">
+          <div className={detailBlockClass}>
+        <div className={detailBlockHeadingClass}>
           <div>
-            <p className="eyebrow">{localize(uiCopy.evidence, language)}</p>
-            <h3>{localize(uiCopy.anonymousCommunityRecord, language)}</h3>
+            <p className={eyebrowClass}>{localize(uiCopy.evidence, language)}</p>
+            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">{localize(uiCopy.anonymousCommunityRecord, language)}</h3>
           </div>
-          <span className="detail-count">{promiseEvidence.length}</span>
+          <span className={detailCountClass}>{promiseEvidence.length}</span>
         </div>
         <form
           aria-label={`${localize(uiCopy.addAnonymousEvidence, language)} ${promiseTitle}`}
-          className="evidence-form"
+          className={evidenceFormClass}
           onSubmit={handleSubmitEvidence}
         >
-          <div className="evidence-form__topline">
-            <p className="eyebrow">{localize(uiCopy.addEvidence, language)}</p>
-            <span className="evidence-form__privacy">
+          <div className={evidenceFormToplineClass}>
+            <p className={cn(eyebrowClass, "m-0")}>{localize(uiCopy.addEvidence, language)}</p>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
               <Icon name="shield" />
               {localize(uiCopy.identityHidden, language)}
             </span>
           </div>
-          <div className="evidence-form__grid">
-            <label className="form-field">
-              <span>{localize(uiCopy.evidenceType, language)}</span>
+          <div className={evidenceFormGridClass}>
+            <label className={formFieldClass}>
+              <span className="block">{localize(uiCopy.evidenceType, language)}</span>
               <select
+                className={nativeFieldClass}
                 onChange={(event) => setEvidenceType(event.target.value as EvidenceRecord["type"])}
                 value={evidenceType}
               >
@@ -674,9 +730,10 @@ function PromiseDetailTabs({
                 ))}
               </select>
             </label>
-            <label className="form-field">
-              <span>{localize(uiCopy.sourceLabel, language)}</span>
+            <label className={formFieldClass}>
+              <span className="block">{localize(uiCopy.sourceLabel, language)}</span>
               <select
+                className={nativeFieldClass}
                 onChange={(event) => setSourceLabelId(event.target.value)}
                 value={sourceLabelId}
               >
@@ -688,8 +745,8 @@ function PromiseDetailTabs({
                 ))}
               </select>
             </label>
-            <label className="form-field form-field--wide">
-              <span>{localize(uiCopy.evidenceNote, language)}</span>
+            <label className={cn(formFieldClass, "col-span-full")}>
+              <span className="block">{localize(uiCopy.evidenceNote, language)}</span>
               <Textarea
                 onChange={(event) => setEvidenceNote(event.target.value)}
                 placeholder={localize(uiCopy.evidencePlaceholder, language)}
@@ -697,39 +754,39 @@ function PromiseDetailTabs({
               />
             </label>
           </div>
-          <div className="evidence-form__actions">
+          <div className="flex justify-end">
             <Button disabled={!canSubmitEvidence} type="submit">
               {localize(uiCopy.addAnonymousEvidence, language)}
             </Button>
           </div>
         </form>
         {promiseEvidence.length > 0 ? (
-          <ul className="detail-list">
+          <ul className={detailListClass}>
             {promiseEvidence.map((item) => {
               const note = localizeUserText(item.note, language);
               return (
-                <li className="detail-row" key={item.id}>
-                  <span className="detail-row__icon">
+                <li className={detailRowClass} key={item.id}>
+                  <span className={detailIconClass}>
                     <Icon name={item.createdOffline ? "signal" : "file"} />
                   </span>
                   <div>
-                    <div className="detail-row__topline">
-                      <strong>{localize(evidenceTypeLabels[item.type], language)}</strong>
-                      <span>{formatDateTime(item.createdAt, language)}</span>
+                    <div className={detailToplineClass}>
+                      <strong className="block text-sm font-bold text-foreground">{localize(evidenceTypeLabels[item.type], language)}</strong>
+                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
-                    <p>{note.text}</p>
-                    <div className="detail-tags">
-                      <span>{localize(item.sourceLabel, language)}</span>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{note.text}</p>
+                    <div className={tagListClass}>
+                      <span className={tagClass}>{localize(item.sourceLabel, language)}</span>
                       {note.isFallback ? (
-                        <span>
+                        <span className={tagClass}>
                           {localize(uiCopy.original, language)}: {languageLabel(note.originalLanguage)}
                         </span>
                       ) : null}
                       {note.isFallback && note.translationStatus === "pending" ? (
-                        <span>{localize(uiCopy.translationPending, language)}</span>
+                        <span className={tagClass}>{localize(uiCopy.translationPending, language)}</span>
                       ) : null}
-                      {item.anonymous ? <span>{localize(uiCopy.anonymous, language)}</span> : null}
-                      {item.createdOffline ? <span>{localize(uiCopy.createdOffline, language)}</span> : null}
+                      {item.anonymous ? <span className={tagClass}>{localize(uiCopy.anonymous, language)}</span> : null}
+                      {item.createdOffline ? <span className={tagClass}>{localize(uiCopy.createdOffline, language)}</span> : null}
                     </div>
                   </div>
                 </li>
@@ -737,17 +794,17 @@ function PromiseDetailTabs({
             })}
           </ul>
         ) : (
-          <p className="empty-copy">{localize(uiCopy.noEvidence, language)}</p>
+          <p className={emptyCopyClass}>{localize(uiCopy.noEvidence, language)}</p>
         )}
           </div>
         </TabsContent>
 
-        <TabsContent className="promise-detail__tab-content" value="context">
-          <div className="detail-block">
-        <div className="detail-block__heading">
+        <TabsContent className="grid gap-4" value="context">
+          <div className={detailBlockClass}>
+        <div className={detailBlockHeadingClass}>
           <div>
-            <p className="eyebrow">{localize(uiCopy.communityContext, language)}</p>
-            <h3>
+            <p className={eyebrowClass}>{localize(uiCopy.communityContext, language)}</p>
+            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">
               {localize(
                 text(
                   "Anonymous notes and fact checks",
@@ -758,24 +815,25 @@ function PromiseDetailTabs({
               )}
             </h3>
           </div>
-          <span className="detail-count">{promiseContextNotes.length}</span>
+          <span className={detailCountClass}>{promiseContextNotes.length}</span>
         </div>
         <form
           aria-label={`${localize(uiCopy.addAnonymousContextNote, language)} ${promiseTitle}`}
-          className="evidence-form"
+          className={evidenceFormClass}
           onSubmit={handleSubmitContextNote}
         >
-          <div className="evidence-form__topline">
-            <p className="eyebrow">{localize(uiCopy.addContext, language)}</p>
-            <span className="evidence-form__privacy">
+          <div className={evidenceFormToplineClass}>
+            <p className={cn(eyebrowClass, "m-0")}>{localize(uiCopy.addContext, language)}</p>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
               <Icon name="shield" />
               {localize(uiCopy.noIdentityCollected, language)}
             </span>
           </div>
-          <div className="evidence-form__grid">
-            <label className="form-field">
-              <span>{localize(uiCopy.confidenceLabel, language)}</span>
+          <div className={evidenceFormGridClass}>
+            <label className={formFieldClass}>
+              <span className="block">{localize(uiCopy.confidenceLabel, language)}</span>
               <select
+                className={nativeFieldClass}
                 onChange={(event) =>
                   setConfidenceLabel(event.target.value as ContextNoteRecord["confidenceLabel"])
                 }
@@ -788,8 +846,8 @@ function PromiseDetailTabs({
                 ))}
               </select>
             </label>
-            <label className="form-field form-field--wide">
-              <span>{localize(uiCopy.contextNote, language)}</span>
+            <label className={cn(formFieldClass, "col-span-full")}>
+              <span className="block">{localize(uiCopy.contextNote, language)}</span>
               <Textarea
                 onChange={(event) => setContextNote(event.target.value)}
                 placeholder={localize(
@@ -804,39 +862,39 @@ function PromiseDetailTabs({
               />
             </label>
           </div>
-          <div className="evidence-form__actions">
+          <div className="flex justify-end">
             <Button disabled={!canSubmitContextNote} type="submit">
               {localize(uiCopy.addAnonymousContextNote, language)}
             </Button>
           </div>
         </form>
         {promiseContextNotes.length > 0 ? (
-          <ul className="detail-list">
+          <ul className={detailListClass}>
             {promiseContextNotes.map((item) => {
               const note = localizeUserText(item.note, language);
               return (
-                <li className="detail-row" key={item.id}>
-                  <span className="detail-row__icon">
+                <li className={detailRowClass} key={item.id}>
+                  <span className={detailIconClass}>
                     <Icon name={item.id.startsWith("context-local-") ? "signal" : "map"} />
                   </span>
                   <div>
-                    <div className="detail-row__topline">
-                      <strong>{localize(confidenceLabels[item.confidenceLabel], language)}</strong>
-                      <span>{formatDateTime(item.createdAt, language)}</span>
+                    <div className={detailToplineClass}>
+                      <strong className="block text-sm font-bold text-foreground">{localize(confidenceLabels[item.confidenceLabel], language)}</strong>
+                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
-                    <p>{note.text}</p>
-                    <div className="detail-tags">
+                    <p className="mt-1.5 text-sm text-muted-foreground">{note.text}</p>
+                    <div className={tagListClass}>
                       {note.isFallback ? (
-                        <span>
+                        <span className={tagClass}>
                           {localize(uiCopy.original, language)}: {languageLabel(note.originalLanguage)}
                         </span>
                       ) : null}
                       {note.isFallback && note.translationStatus === "pending" ? (
-                        <span>{localize(uiCopy.translationPending, language)}</span>
+                        <span className={tagClass}>{localize(uiCopy.translationPending, language)}</span>
                       ) : null}
-                      <span>{localize(uiCopy.anonymous, language)}</span>
+                      <span className={tagClass}>{localize(uiCopy.anonymous, language)}</span>
                       {item.id.startsWith("context-local-") ? (
-                        <span>{localize(uiCopy.queuedForSync, language)}</span>
+                        <span className={tagClass}>{localize(uiCopy.queuedForSync, language)}</span>
                       ) : null}
                     </div>
                   </div>
@@ -845,45 +903,45 @@ function PromiseDetailTabs({
             })}
           </ul>
         ) : (
-          <p className="empty-copy">{localize(uiCopy.noCommunityContext, language)}</p>
+          <p className={emptyCopyClass}>{localize(uiCopy.noCommunityContext, language)}</p>
         )}
           </div>
         </TabsContent>
 
-        <TabsContent className="promise-detail__tab-content" value="history">
-          <div className="detail-block">
-        <div className="detail-block__heading">
+        <TabsContent className="grid gap-4" value="history">
+          <div className={detailBlockClass}>
+        <div className={detailBlockHeadingClass}>
           <div>
-            <p className="eyebrow">{localize(uiCopy.statusHistory, language)}</p>
-            <h3>{localize(uiCopy.statusReason, language)}</h3>
+            <p className={eyebrowClass}>{localize(uiCopy.statusHistory, language)}</p>
+            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">{localize(uiCopy.statusReason, language)}</h3>
           </div>
-          <span className="detail-count">{promiseHistory.length}</span>
+          <span className={detailCountClass}>{promiseHistory.length}</span>
         </div>
         {promiseHistory.length > 0 ? (
-          <ul className="detail-list">
+          <ul className={detailListClass}>
             {promiseHistory.map((item) => {
               const evidenceLabels = linkedEvidenceLabels(item, evidenceRecords, language);
               return (
-                <li className="detail-row" key={item.id}>
-                  <span className="detail-row__icon">
+                <li className={detailRowClass} key={item.id}>
+                  <span className={detailIconClass}>
                     <Icon name="check" />
                   </span>
                   <div>
-                    <div className="detail-row__topline">
+                    <div className={detailToplineClass}>
                       <StatusPill tone={item.status}>
                         {localize(statusLabels[item.status], language)}
                       </StatusPill>
-                      <span>{formatDateTime(item.createdAt, language)}</span>
+                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
-                    <p>{localize(item.reason, language)}</p>
-                    <div className="detail-tags">
-                      <span>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{localize(item.reason, language)}</p>
+                    <div className={tagListClass}>
+                      <span className={tagClass}>
                         {item.evidenceIds.length}{" "}
                         {item.evidenceIds.length === 1
                           ? localize(uiCopy.linkedEvidenceSingular, language)
                           : localize(uiCopy.linkedEvidencePlural, language)}
                       </span>
-                      {evidenceLabels ? <span>{evidenceLabels}</span> : null}
+                      {evidenceLabels ? <span className={tagClass}>{evidenceLabels}</span> : null}
                     </div>
                   </div>
                 </li>
@@ -891,7 +949,7 @@ function PromiseDetailTabs({
             })}
           </ul>
         ) : (
-          <p className="empty-copy">{localize(uiCopy.noStatusChanges, language)}</p>
+          <p className={emptyCopyClass}>{localize(uiCopy.noStatusChanges, language)}</p>
         )}
           </div>
         </TabsContent>
@@ -920,14 +978,14 @@ function PromiseDetail({
   if (!promise) {
     return (
       <section
-        className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
+        className={cn("grid gap-5", panelClass, compact && inlineDetailPanelClass)}
         aria-label={localize(uiCopy.promiseDetail, language)}
       >
-        <div className="section-heading">
-          <p className="eyebrow">{localize(uiCopy.promiseDetail, language)}</p>
-          <h2>{localize(uiCopy.selectPromise, language)}</h2>
+        <div className={sectionHeadingClass}>
+          <p className={eyebrowClass}>{localize(uiCopy.promiseDetail, language)}</p>
+          <h2 className={sectionTitleClass}>{localize(uiCopy.selectPromise, language)}</h2>
         </div>
-        <p className="empty-copy">
+        <p className={emptyCopyClass}>
           {localize(
             text(
               "Choose a promise to review checkpoints, evidence, and status history.",
@@ -1111,22 +1169,23 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="site-header__inner">
-          <div className="brand" aria-label="Manifesto">
-            <div className="brand__mark" aria-hidden="true">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-[#e3dfd2] bg-background/95">
+        <div className={cn(pageWidthClass, "flex items-center justify-between gap-6 py-6 max-[820px]:grid max-[820px]:items-start max-[820px]:justify-start")}>
+          <div className="flex gap-3.5" aria-label="Manifesto">
+            <div className={cn(iconBoxClass, "size-11")} aria-hidden="true">
               <Icon name="book" />
             </div>
             <div>
-              <h1 className="brand__name">Manifesto</h1>
-              <p className="brand__tagline">{localize(uiCopy.brandTagline, language)}</p>
+              <h1 className="m-0 text-xl font-bold tracking-normal text-[#17241d]">Manifesto</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">{localize(uiCopy.brandTagline, language)}</p>
             </div>
           </div>
-          <div className="header-status">
-            <label className="language-select">
+          <div className="flex flex-wrap justify-end gap-2.5 max-[820px]:items-start max-[820px]:justify-start">
+            <label className="inline-grid grid-cols-[auto_auto] items-center gap-2 rounded-full border border-input bg-card py-1.5 pr-2 pl-3 text-sm font-bold text-muted-foreground">
               <span>{localize(uiCopy.language, language)}</span>
               <select
+                className="min-w-28 rounded-full border border-[#e0dbce] bg-[#faf8f0] px-2 py-1 text-foreground"
                 aria-label={localize(uiCopy.language, language)}
                 onChange={(event) => setLanguage(event.target.value as LanguageCode)}
                 value={language}
@@ -1138,11 +1197,11 @@ function App() {
                 ))}
               </select>
             </label>
-            <Badge className="header-badge" variant="outline">
+            <Badge className="flex items-center gap-1.5 rounded-full border-input bg-card px-3 py-2 text-sm font-bold text-muted-foreground" variant="outline">
               <Icon name="shield" />
               {localize(uiCopy.anonymousByDefault, language)}
             </Badge>
-            <Badge className="header-badge" variant="outline">
+            <Badge className="flex items-center gap-1.5 rounded-full border-input bg-card px-3 py-2 text-sm font-bold text-muted-foreground" variant="outline">
               <Icon name="signal" />
               {syncQueueRecords.length} {localize(uiCopy.queued, language)}
             </Badge>
@@ -1150,16 +1209,16 @@ function App() {
         </div>
       </header>
 
-      <main className="main-content">
-        <div className="view-header">
+      <main className={cn(pageWidthClass, "py-8 pb-16 max-[520px]:py-6 max-[520px]:pb-12")}>
+        <div className="border-b border-[#e3dfd2] pb-5">
           <div>
-            <p className="eyebrow">{localize(uiCopy.voiceAndAccountability, language)}</p>
-            <h2 id="page-title">
+            <p className={eyebrowClass}>{localize(uiCopy.voiceAndAccountability, language)}</p>
+            <h2 className="m-0 text-[clamp(1.55rem,3vw,2.5rem)] leading-none tracking-normal text-[#17241d] max-[520px]:text-[1.75rem]" id="page-title">
               {view === "dashboard"
                 ? localize(uiCopy.followingDashboard, language)
                 : localize(uiCopy.manifestoBrowser, language)}
             </h2>
-            <p>
+            <p className="mt-2.5 max-w-2xl text-base text-muted-foreground">
               {view === "dashboard"
                 ? localize(uiCopy.dashboardHeaderBody, language)
                 : localize(uiCopy.manifestoHeaderBody, language)}
@@ -1167,9 +1226,12 @@ function App() {
           </div>
         </div>
 
-        <nav className="view-tabs" aria-label={localize(uiCopy.primaryViews, language)}>
+        <nav className="my-6 flex flex-wrap gap-2" aria-label={localize(uiCopy.primaryViews, language)}>
           <Button
-            className={view === "dashboard" ? "is-active" : ""}
+            className={cn(
+              "gap-2 rounded-full border-input bg-card px-3.5 py-2.5 text-sm font-bold text-muted-foreground",
+              view === "dashboard" && "border-[#b5d1bf] bg-accent text-primary",
+            )}
             onClick={() => handleSelectView("dashboard")}
             type="button"
             variant="outline"
@@ -1178,7 +1240,10 @@ function App() {
             {localize(uiCopy.followingDashboard, language)}
           </Button>
           <Button
-            className={view === "manifestos" ? "is-active" : ""}
+            className={cn(
+              "gap-2 rounded-full border-input bg-card px-3.5 py-2.5 text-sm font-bold text-muted-foreground",
+              view === "manifestos" && "border-[#b5d1bf] bg-accent text-primary",
+            )}
             onClick={() => handleSelectView("manifestos")}
             type="button"
             variant="outline"
@@ -1189,12 +1254,12 @@ function App() {
         </nav>
 
         {view === "dashboard" ? (
-          <section className="dashboard-layout" aria-label={localize(uiCopy.followingDashboard, language)}>
-            <section className="dashboard-list-panel" aria-label={localize(uiCopy.priorityPromises, language)}>
-              <div className="paper-panel summary-panel">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.dashboard, language)}</p>
-                  <h2>{localize(uiCopy.priorityPromises, language)}</h2>
+          <section className="grid grid-cols-[minmax(320px,0.85fr)_minmax(0,1.25fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.followingDashboard, language)}>
+            <section className="grid min-w-0 gap-4" aria-label={localize(uiCopy.priorityPromises, language)}>
+              <div className={cn(panelClass, "grid gap-4")}>
+                <div className={sectionHeadingClass}>
+                  <p className={eyebrowClass}>{localize(uiCopy.dashboard, language)}</p>
+                  <h2 className={sectionTitleClass}>{localize(uiCopy.priorityPromises, language)}</h2>
                 </div>
                 <StatusStrip
                   counts={followedStatusCounts}
@@ -1203,7 +1268,7 @@ function App() {
                 />
               </div>
 
-              <div className="promise-row-list">
+              <div className="grid gap-2.5">
                 {priorityPromises.map((promise) => (
                   <PromiseRow
                     active={selectedDashboardPromise?.id === promise.id}
@@ -1218,17 +1283,17 @@ function App() {
               {selectedDashboardPromise ? (
                 <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
                   <SheetTrigger asChild>
-                    <Button className="dashboard-mobile-detail-trigger" type="button" variant="outline">
-                      <span>{localize(uiCopy.promiseDetail, language)}</span>
-                      <strong>{localize(selectedDashboardPromise.title, language)}</strong>
+                    <Button className="hidden h-auto min-h-0 w-full flex-col items-start justify-center gap-1 rounded-lg p-3.5 text-left whitespace-normal max-[820px]:flex" type="button" variant="outline">
+                      <span className="block max-w-full text-xs font-extrabold uppercase tracking-[0.08em] text-muted-foreground [overflow-wrap:anywhere]">{localize(uiCopy.promiseDetail, language)}</span>
+                      <strong className="block max-w-full text-sm leading-snug text-[#17241d]">{localize(selectedDashboardPromise.title, language)}</strong>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent className="promise-detail-sheet" side="right">
+                  <SheetContent className="h-[100dvh] max-h-[100dvh] w-[min(100%,420px)] max-w-none overflow-hidden px-4 pb-4" side="right">
                     <SheetHeader>
                       <SheetTitle>{localize(uiCopy.promiseDetail, language)}</SheetTitle>
                       <SheetDescription>{localize(selectedDashboardPromise.title, language)}</SheetDescription>
                     </SheetHeader>
-                    <div className="promise-detail-sheet__body">
+                    <div className="min-h-0 flex-1 overflow-auto px-1 pb-1">
                       <PromiseDetail
                         compact
                         contextNoteRecords={contextNoteRecords}
@@ -1244,7 +1309,7 @@ function App() {
               ) : null}
             </section>
 
-            <aside className="dashboard-detail" aria-label={localize(uiCopy.promiseDetail, language)}>
+            <aside className="sticky top-6 min-w-0 max-[820px]:hidden" aria-label={localize(uiCopy.promiseDetail, language)}>
               <PromiseDetail
                 compact
                 contextNoteRecords={contextNoteRecords}
@@ -1257,28 +1322,30 @@ function App() {
             </aside>
           </section>
         ) : (
-          <section className="browser-layout" aria-label={localize(uiCopy.manifestoBrowser, language)}>
-            <aside className="paper-panel browser-filters">
-              <div className="section-heading">
-                <p className="eyebrow">{localize(uiCopy.browse, language)}</p>
-                <h2>{localize(uiCopy.candidates, language)}</h2>
+          <section className="grid grid-cols-[minmax(280px,0.45fr)_minmax(0,1.55fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.manifestoBrowser, language)}>
+            <aside className={cn(panelClass, "sticky top-6 max-[820px]:static")}>
+              <div className={sectionHeadingClass}>
+                <p className={eyebrowClass}>{localize(uiCopy.browse, language)}</p>
+                <h2 className={sectionTitleClass}>{localize(uiCopy.candidates, language)}</h2>
               </div>
-              <label className="search-field">
+              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 rounded-lg border border-input bg-background px-3 py-2.5 text-muted-foreground">
                 <Icon name="search" />
                 <span className="sr-only">{localize(uiCopy.searchCandidatesAndPromises, language)}</span>
                 <Input
+                  className="border-0 bg-transparent shadow-none outline-none focus-visible:ring-0"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={localize(uiCopy.searchPlaceholder, language)}
                   type="search"
                   value={query}
                 />
               </label>
-              <label className="filter-field">
-                <span>
+              <label className="mt-3.5 grid gap-2 text-sm font-bold text-muted-foreground">
+                <span className="flex items-center gap-2">
                   <Icon name="filter" />
                   {localize(uiCopy.office, language)}
                 </span>
                 <select
+                  className={nativeFieldClass}
                   onChange={(event) => setOfficeFilter(event.target.value as "all" | OfficeCode)}
                   value={officeFilter}
                 >
@@ -1290,12 +1357,13 @@ function App() {
                   ))}
                 </select>
               </label>
-              <label className="filter-field">
-                <span>
+              <label className="mt-3.5 grid gap-2 text-sm font-bold text-muted-foreground">
+                <span className="flex items-center gap-2">
                   <Icon name="filter" />
                   {localize(uiCopy.sector, language)}
                 </span>
                 <select
+                  className={nativeFieldClass}
                   onChange={(event) => setSectorFilter(event.target.value as "all" | SectorCode)}
                   value={sectorFilter}
                 >
@@ -1307,7 +1375,7 @@ function App() {
                   ))}
                 </select>
               </label>
-              <div className="candidate-list">
+              <div className="mt-5 grid gap-3.5">
                 {filteredCandidates.map((candidate) => (
                   <CandidateCard
                     active={selectedCandidate.id === candidate.id}
@@ -1320,22 +1388,22 @@ function App() {
               </div>
             </aside>
 
-            <section className="content-stack manifesto-detail">
-              <article className="paper-panel candidate-profile">
-                <div className="candidate-profile__icon">
+            <section className="grid gap-6">
+              <article className={cn(panelClass, "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 max-[520px]:grid-cols-1")}>
+                <div className={cn(iconBoxClass, "size-14 text-xl")}>
                   <Icon name={isElectedCandidate(selectedCandidate) ? "pin" : "archive"} />
                 </div>
                 <div>
-                  <div className="candidate-profile__topline">
+                  <div className="mb-3.5 flex justify-between gap-3.5">
                     <StatusPill tone={isElectedCandidate(selectedCandidate) ? "kept" : "not_started"}>
                       {isElectedCandidate(selectedCandidate)
                         ? localize(uiCopy.elected, language)
                         : localize(uiCopy.archived, language)}
                     </StatusPill>
-                    <span className="candidate-profile__year">{selectedCandidate.electionYear}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{selectedCandidate.electionYear}</span>
                   </div>
-                  <h2>{selectedCandidate.name}</h2>
-                  <p>
+                  <h2 className="m-0 text-[clamp(1.75rem,3vw,2.6rem)] leading-none tracking-normal text-[#17241d]">{selectedCandidate.name}</h2>
+                  <p className="mt-2 text-muted-foreground">
                     {localize(officeLabels[selectedCandidate.office], language)} |{" "}
                     {localize(regionLabels[selectedCandidate.region], language)} |{" "}
                     {localize(selectedCandidate.partyOrAffiliation, language)}
@@ -1343,31 +1411,31 @@ function App() {
                 </div>
               </article>
 
-              <section className="paper-panel manifesto-summary">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.manifesto, language)}</p>
-                  <h2>
+              <section className={cn(panelClass, "grid gap-4")}>
+                <div className={sectionHeadingClass}>
+                  <p className={eyebrowClass}>{localize(uiCopy.manifesto, language)}</p>
+                  <h2 className={sectionTitleClass}>
                     {selectedManifesto
                       ? localize(selectedManifesto.title, language)
                       : localize(uiCopy.noManifesto, language)}
                   </h2>
                 </div>
-                <dl className="manifesto-facts">
-                  <div>
-                    <dt>{localize(uiCopy.source, language)}</dt>
-                    <dd>{selectedManifesto ? localize(selectedManifesto.sourceLabel, language) : "-"}</dd>
+                <dl className={manifestoFactGridClass}>
+                  <div className={factItemClass}>
+                    <dt className={factTermClass}>{localize(uiCopy.source, language)}</dt>
+                    <dd className={factDefinitionClass}>{selectedManifesto ? localize(selectedManifesto.sourceLabel, language) : "-"}</dd>
                   </div>
-                  <div>
-                    <dt>{localize(uiCopy.published, language)}</dt>
-                    <dd>
+                  <div className={factItemClass}>
+                    <dt className={factTermClass}>{localize(uiCopy.published, language)}</dt>
+                    <dd className={factDefinitionClass}>
                       {selectedManifesto
                         ? formatDate(selectedManifesto.publishedDate, language)
                         : "-"}
                     </dd>
                   </div>
-                  <div>
-                    <dt>{localize(uiCopy.availableLanguages, language)}</dt>
-                    <dd>{languageOptions.map((option) => option.label).join(", ")}</dd>
+                  <div className={factItemClass}>
+                    <dt className={factTermClass}>{localize(uiCopy.availableLanguages, language)}</dt>
+                    <dd className={factDefinitionClass}>{languageOptions.map((option) => option.label).join(", ")}</dd>
                   </div>
                 </dl>
                 <StatusStrip
@@ -1377,15 +1445,15 @@ function App() {
                 />
               </section>
 
-              <section className="manifesto-workspace" aria-label={localize(uiCopy.manifesto, language)}>
-                <section className="manifesto-promise-list" aria-label={localize(uiCopy.selectPromise, language)}>
+              <section className="grid grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] items-start gap-6 max-[1120px]:grid-cols-1" aria-label={localize(uiCopy.manifesto, language)}>
+                <section className="grid min-w-0 gap-4" aria-label={localize(uiCopy.selectPromise, language)}>
                   {Array.from(new Set(selectedPromises.map((promise) => promise.sector))).map((sector) => (
-                    <div className="sector-group" key={sector}>
-                      <div className="section-heading">
-                        <p className="eyebrow">{localize(uiCopy.sector, language)}</p>
-                        <h2>{localize(sectorLabels[sector], language)}</h2>
+                    <div className="grid gap-3.5" key={sector}>
+                      <div className={cn(sectionHeadingClass, "mb-0 pl-1")}>
+                        <p className={eyebrowClass}>{localize(uiCopy.sector, language)}</p>
+                        <h2 className={sectionTitleClass}>{localize(sectorLabels[sector], language)}</h2>
                       </div>
-                      <div className="promise-row-list">
+                      <div className="grid gap-2.5">
                         {selectedPromises
                           .filter((promise) => promise.sector === sector)
                           .map((promise) => (
@@ -1404,12 +1472,12 @@ function App() {
 
                 {selectedPromise ? (
                   <Sheet open={browserDetailOpen} onOpenChange={setBrowserDetailOpen}>
-                    <SheetContent className="promise-detail-sheet" side="right">
+                    <SheetContent className="h-[100dvh] max-h-[100dvh] w-[min(100%,420px)] max-w-none overflow-hidden px-4 pb-4" side="right">
                       <SheetHeader>
                         <SheetTitle>{localize(uiCopy.promiseDetail, language)}</SheetTitle>
                         <SheetDescription>{localize(selectedPromise.title, language)}</SheetDescription>
                       </SheetHeader>
-                      <div className="promise-detail-sheet__body">
+                      <div className="min-h-0 flex-1 overflow-auto px-1 pb-1">
                         <PromiseDetail
                           compact
                           contextNoteRecords={contextNoteRecords}
@@ -1424,7 +1492,7 @@ function App() {
                   </Sheet>
                 ) : null}
 
-                <aside className="manifesto-promise-detail" aria-label={localize(uiCopy.promiseDetail, language)}>
+                <aside className="sticky top-6 min-w-0 max-[1120px]:hidden" aria-label={localize(uiCopy.promiseDetail, language)}>
                   <PromiseDetail
                     compact
                     contextNoteRecords={contextNoteRecords}
