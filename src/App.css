@@ -128,6 +128,29 @@ button {
   font-weight: 700;
 }
 
+.language-select {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #d8d4c7;
+  border-radius: 999px;
+  padding: 6px 8px 6px 12px;
+  background: #fffdf8;
+  color: #526158;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.language-select select {
+  min-width: 118px;
+  border: 1px solid #e0dbce;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #faf8f0;
+  color: #26312b;
+}
+
 .icon {
   width: 1.05em;
   height: 1.05em;

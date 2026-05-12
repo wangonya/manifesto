@@ -19,7 +19,7 @@ The working demo should let a user:
 - Browse a structured manifesto for a fictional election.
 - Focus on the elected candidate while preserving archived candidates.
 - View promises by sector, deadline, checkpoint, and status.
-- Read plain-language summaries in multiple seeded languages.
+- Switch the whole app between seeded languages, including UI labels, manifesto data, summaries, evidence, context, and status history.
 - Submit anonymous evidence for a promise.
 - Add community context or fact-check notes.
 - Refresh without losing locally entered data.
@@ -68,6 +68,8 @@ The service worker and Cache API make the app shell load offline. Dexie and Inde
 - `elected`
 - `archived`
 
+Localized text fields use `{ en, sw, fr }` seeded values for demo reliability. User-submitted text stores the original selected language immediately and can later be filled by a translation service without blocking the local-first flow.
+
 `Manifesto`
 
 - `id`
@@ -75,7 +77,7 @@ The service worker and Cache API make the app shell load offline. Dexie and Inde
 - `title`
 - `publishedDate`
 - `sourceLabel`
-- `language`
+- `originalLanguage`
 
 `Promise`
 
@@ -87,14 +89,14 @@ The service worker and Cache API make the app shell load offline. Dexie and Inde
 - `deadline`
 - `status`
 - `checkpoints`
-- `summariesByLanguage`
+- `summary`
 
 `Evidence`
 
 - `id`
 - `promiseId`
 - `type`
-- `note`
+- `note` with original language and translation status
 - `sourceLabel`
 - `anonymous`
 - `createdAt`
@@ -104,8 +106,7 @@ The service worker and Cache API make the app shell load offline. Dexie and Inde
 
 - `id`
 - `promiseId`
-- `note`
-- `language`
+- `note` with original language and translation status
 - `confidenceLabel`
 - `createdAt`
 
@@ -136,7 +137,7 @@ The service worker and Cache API make the app shell load offline. Dexie and Inde
 4. Build promise detail views with checkpoints, evidence, and status history.
 5. Add anonymous evidence submission.
 6. Add community context notes.
-7. Add multilingual summary toggle using seeded text.
+7. Add app-wide multilingual selection using seeded localized UI and civic data.
 8. Add IndexedDB persistence through Dexie and reactive reads through `dexie-react-hooks`.
 9. Add PWA offline app-shell caching through `vite-plugin-pwa`.
 10. Add simulated device sync using locally queued `SyncEnvelope` records.
@@ -151,7 +152,7 @@ Each milestone should produce a working app state before the next milestone begi
 - Promise status counts match the seeded and locally updated data.
 - Evidence can be added anonymously.
 - Context notes can be added without identity.
-- Multilingual summaries can be switched without layout breakage.
+- The selected language applies across the whole app without filtering out civic records or breaking layout.
 - Local data survives page refresh after Dexie persistence is added.
 - The app shell loads offline after PWA caching is added and the app has been visited once.
 - Simulated sync moves queued local changes between device views without deleting evidence.

@@ -21,7 +21,7 @@ The working demo should show:
 - A structured manifesto for a fictional election.
 - Elected candidate focus with archived unelected candidates.
 - Promise tracking by sector, deadline, checkpoint, and status.
-- Seeded multilingual plain-language summaries.
+- App-wide multilingual UI and seeded civic content.
 - Anonymous evidence submission.
 - Community context or fact-check notes.
 - Local persistence after refresh.
@@ -47,7 +47,7 @@ Real for the demo:
 - Anonymous contribution flow
 - Offline app-shell behavior after caching
 - Structured promise tracking
-- Seeded multilingual summaries
+- Seeded app-wide multilingual content
 
 Simulated for the demo:
 
@@ -56,6 +56,12 @@ Simulated for the demo:
 - Candidate verification
 - Legal accountability workflows
 - Production moderation and identity systems
+
+## Multilingual Demo Behavior
+
+The language selector changes the whole app, not one content section. Seeded candidates, manifestos, promises, checkpoints, evidence, context notes, status history, filters, labels, and dates render in the selected language while stable IDs keep the same civic records selected.
+
+User-submitted evidence and context are stored immediately in the selected language with translation marked pending, so the app can fall back to the original text offline and later fill missing translations through a safe server-side API proxy.
 
 ## Build Plan
 

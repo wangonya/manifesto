@@ -35,6 +35,33 @@ describe("Manifesto app", () => {
     expect(counts).toHaveTextContent(/At risk\s*1/);
   });
 
+  it("applies the selected language across navigation, data, filters, and search", async () => {
+    const { user } = renderApp();
+
+    await user.selectOptions(screen.getByLabelText("Language"), "sw");
+
+    expect(screen.getByText("Bila jina kwa msingi")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ahadi za kipaumbele" })).toBeInTheDocument();
+
+    const dashboard = screen.getByRole("region", { name: "Dashibodi ya ufuatiliaji" });
+    expect(within(dashboard).getByText("Rekebisha visima vilivyokwama katika wadi kame")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Tengeneza barabara za mashambani kabla ya msimu wa mavuno")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /kivinjari cha manifesto/i }));
+    await user.selectOptions(screen.getByLabelText("Afisi"), "member_of_parliament");
+    await user.type(screen.getByRole("searchbox", { name: /tafuta wagombea na ahadi/i }), "makazi");
+
+    expect(screen.getByRole("button", { name: /Nadia Hassan/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /David Ochieng/ })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Lugha"), "fr");
+    await user.click(screen.getByRole("button", { name: "Tableau de bord du suivi" }));
+
+    expect(screen.getByText("Anonyme par défaut")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Promesses prioritaires" })).toBeInTheDocument();
+    expect(screen.getByText("Réparer les forages bloqués dans les quartiers arides")).toBeInTheDocument();
+  });
+
   it("opens the manifesto browser with elected and archived candidates available", async () => {
     const { user } = renderApp();
 
@@ -51,13 +78,13 @@ describe("Manifesto app", () => {
     const { user } = renderApp();
 
     await user.click(screen.getByRole("button", { name: /manifesto browser/i }));
-    await user.selectOptions(screen.getByLabelText("Office"), "Member of Parliament");
+    await user.selectOptions(screen.getByLabelText("Office"), "member_of_parliament");
 
     expect(screen.getByRole("button", { name: /David Ochieng/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Nadia Hassan/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Amina Njoroge/ })).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText("Office"), "All offices");
+    await user.selectOptions(screen.getByLabelText("Office"), "all");
     await user.type(screen.getByRole("searchbox", { name: /search candidates and promises/i }), "housing");
 
     expect(screen.getByRole("button", { name: /Nadia Hassan/ })).toBeInTheDocument();
@@ -117,7 +144,7 @@ describe("Manifesto app", () => {
 
     expect(submitButton).toBeDisabled();
 
-    await user.selectOptions(sourceSelect, "Clinic watch group");
+    await user.selectOptions(sourceSelect, "clinic-watch-group");
 
     expect(submitButton).toBeEnabled();
   });
@@ -136,7 +163,6 @@ describe("Manifesto app", () => {
     expect(within(detail).getByText("No identity collected")).toBeInTheDocument();
     expect(submitButton).toBeDisabled();
 
-    await user.selectOptions(within(detail).getByLabelText("Context language"), "sheng");
     await user.selectOptions(within(detail).getByLabelText("Confidence label"), "needs verification");
 
     expect(submitButton).toBeDisabled();
@@ -159,7 +185,7 @@ describe("Manifesto app", () => {
     const noteInput = within(detail).getByLabelText("Evidence note");
 
     await user.selectOptions(within(detail).getByLabelText("Evidence type"), "public_record");
-    await user.selectOptions(sourceSelect, "Clinic watch group");
+    await user.selectOptions(sourceSelect, "clinic-watch-group");
     await user.type(noteInput, "Night-shift nurse roster was posted at the county clinic gate.");
     await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
 
@@ -181,23 +207,19 @@ describe("Manifesto app", () => {
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
     });
-    const languageSelect = within(detail).getByLabelText("Context language");
     const confidenceSelect = within(detail).getByLabelText("Confidence label");
     const noteInput = within(detail).getByLabelText("Context note");
     const contextNote = "Residents say night staffing depends on the next county budget hearing.";
 
-    await user.selectOptions(languageSelect, "sheng");
     await user.selectOptions(confidenceSelect, "needs verification");
     await user.type(noteInput, contextNote);
     await user.click(within(detail).getByRole("button", { name: "Add anonymous context note" }));
 
     expect(within(detail).getByText(contextNote)).toBeInTheDocument();
-    expect(within(detail).getAllByText("needs verification").length).toBeGreaterThan(0);
-    expect(within(detail).getAllByText("Sheng").length).toBeGreaterThan(1);
+    expect(within(detail).getAllByText("Needs verification").length).toBeGreaterThan(0);
     expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
     expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
     expect(screen.getByText("2 queued")).toBeInTheDocument();
-    expect(languageSelect).toHaveValue("en");
     expect(confidenceSelect).toHaveValue("community report");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous context note" })).toBeDisabled();
