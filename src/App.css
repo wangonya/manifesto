@@ -342,6 +342,79 @@ button {
   grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.6fr) minmax(260px, 0.85fr);
 }
 
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.25fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-list-panel {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+}
+
+.dashboard-detail {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+}
+
+.promise-row-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-mobile-detail-trigger {
+  display: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  white-space: normal;
+  text-align: left;
+}
+
+.dashboard-mobile-detail-trigger span,
+.dashboard-mobile-detail-trigger strong {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-mobile-detail-trigger span {
+  color: #69736c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-mobile-detail-trigger strong {
+  color: #17241d;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.dashboard-detail-sheet {
+  width: min(100%, 420px);
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 0 18px 18px;
+}
+
+.dashboard-detail-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px 4px;
+}
+
 .paper-panel {
   padding: 24px;
 }
@@ -1026,6 +1099,10 @@ button {
 }
 
 @media (max-width: 1120px) {
+  .dashboard-layout {
+    grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+  }
+
   .desktop-grid,
   .browser-layout {
     grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.5fr);
@@ -1056,6 +1133,7 @@ button {
   }
 
   .site-header__inner,
+  .dashboard-layout,
   .desktop-grid,
   .browser-layout,
   .context-rail,
@@ -1070,8 +1148,21 @@ button {
   }
 
   .side-rail,
+  .dashboard-detail,
   .browser-filters {
     position: static;
+  }
+
+  .dashboard-detail {
+    display: none;
+  }
+
+  .dashboard-mobile-detail-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
   }
 
   .status-grid {

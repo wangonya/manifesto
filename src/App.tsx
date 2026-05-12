@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
+import { PromiseRow } from "@/components/app/promise-row";
 import { StatusBadge } from "@/components/app/status-badge";
+import { StatusStrip } from "@/components/app/status-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -25,8 +35,6 @@ import {
 } from "./data";
 import {
   filterCandidates,
-  followedCandidateIds,
-  followedSectors,
   getCandidateForPromise,
   getContextNotesForPromise,
   getEvidenceForPromise,
@@ -1020,6 +1028,7 @@ function App() {
   const [language, setLanguage] = useState<LanguageCode>("en");
   const [selectedCandidateId, setSelectedCandidateId] = useState("cand-amina");
   const [selectedPromiseId, setSelectedPromiseId] = useState(promises[0]?.id ?? "");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState<"all" | OfficeCode>("all");
   const [sectorFilter, setSectorFilter] = useState<"all" | SectorCode>("all");
@@ -1062,15 +1071,14 @@ function App() {
     });
   const selectedStatusHistory = statusHistory.filter((item) => selectedPromiseIds.has(item.promiseId));
   const selectedStatusCounts = getStatusCounts(selectedPromises);
+  const followedStatusCounts = useMemo(
+    () => getStatusCounts(followedPromises),
+    [followedPromises],
+  );
+  const selectedDashboardPromise =
+    priorityPromises.find((promise) => promise.id === selectedPromiseId) ?? priorityPromises[0];
   const offices = Array.from(new Set(candidates.map((candidate) => candidate.office)));
   const sectors = Array.from(new Set(promises.map((promise) => promise.sector)));
-  const recentEvidence = [...evidenceRecords].sort((first, second) => {
-    const firstIsLocal = first.id.startsWith("evidence-local-");
-    const secondIsLocal = second.id.startsWith("evidence-local-");
-    if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
-    return second.createdAt.localeCompare(first.createdAt);
-  });
-
   function handleAddEvidence(promiseId: string, submission: EvidenceSubmission) {
     const createdAt = new Date().toISOString();
     const evidenceId = `evidence-local-${Date.now()}`;
@@ -1150,6 +1158,13 @@ function App() {
     }
   }
 
+  function handleSelectDashboardPromise(promiseId: string) {
+    handleSelectPromise(promiseId);
+    if (window.matchMedia?.("(max-width: 820px)").matches) {
+      setMobileDetailOpen(true);
+    }
+  }
+
   function handleSelectView(nextView: View) {
     if (nextView === "dashboard") {
       const dashboardPromise =
@@ -1157,6 +1172,8 @@ function App() {
       if (dashboardPromise && dashboardPromise.id !== selectedPromiseId) {
         setSelectedPromiseId(dashboardPromise.id);
       }
+    } else {
+      setMobileDetailOpen(false);
     }
 
     setView(nextView);
@@ -1241,131 +1258,71 @@ function App() {
         </nav>
 
         {view === "dashboard" ? (
-          <section className="desktop-grid" aria-label={localize(uiCopy.followingDashboard, language)}>
-            <aside className="paper-panel side-rail">
-              <div className="section-heading">
-                <p className="eyebrow">{localize(uiCopy.following, language)}</p>
-                <h2>{localize(uiCopy.interests, language)}</h2>
-              </div>
-              <div className="interest-list" aria-label={localize(uiCopy.interests, language)}>
-                {[
-                  ...new Set(
-                    candidates
-                      .filter((candidate) => followedCandidateIds.includes(candidate.id))
-                      .map((candidate) => localize(regionLabels[candidate.region], language)),
-                  ),
-                  ...followedSectors.map((sector) => localize(sectorLabels[sector], language)),
-                ].map((interest) => (
-                  <span className="interest-chip" key={interest}>
-                    {interest}
-                  </span>
-                ))}
-                <button className="interest-chip interest-chip--add" type="button">
-                  {localize(uiCopy.add, language)}
-                </button>
-              </div>
-              <div className="quiet-note">
-                <Icon name="shield" />
-                {localize(uiCopy.evidenceAndContextPrivacy, language)}
-              </div>
-            </aside>
-
-            <section className="content-stack" aria-label={localize(uiCopy.priorityPromises, language)}>
+          <section className="dashboard-layout" aria-label={localize(uiCopy.followingDashboard, language)}>
+            <section className="dashboard-list-panel" aria-label={localize(uiCopy.priorityPromises, language)}>
               <div className="paper-panel summary-panel">
                 <div className="section-heading">
                   <p className="eyebrow">{localize(uiCopy.dashboard, language)}</p>
                   <h2>{localize(uiCopy.priorityPromises, language)}</h2>
                 </div>
-                <div className="status-grid" aria-label={localize(uiCopy.promiseStatusCounts, language)}>
-                  {(Object.keys(selectedStatusCounts) as PromiseStatus[]).map((status) => (
-                    <div className="status-count" key={status}>
-                      <StatusPill tone={status}>{localize(statusLabels[status], language)}</StatusPill>
-                      <strong>{getStatusCounts(followedPromises)[status]}</strong>
-                    </div>
-                  ))}
-                </div>
+                <StatusStrip
+                  counts={followedStatusCounts}
+                  label={localize(uiCopy.promiseStatusCounts, language)}
+                  language={language}
+                />
               </div>
 
-              <div className="card-stack">
-                {priorityPromises.map((promise) => {
-                  const isSelected = selectedPromise?.id === promise.id;
-                  return (
-                    <div className="promise-card-group" key={promise.id}>
-                      <PromiseCard
-                        active={isSelected}
-                        language={language}
-                        onSelect={handleSelectPromise}
-                        promise={promise}
-                      />
-                      {isSelected ? (
-                        <PromiseDetail
-                          compact
-                          contextNoteRecords={contextNoteRecords}
-                          evidenceRecords={evidenceRecords}
-                          language={language}
-                          onAddContextNote={handleAddContextNote}
-                          onAddEvidence={handleAddEvidence}
-                          promise={promise}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
+              <div className="promise-row-list">
+                {priorityPromises.map((promise) => (
+                  <PromiseRow
+                    active={selectedDashboardPromise?.id === promise.id}
+                    key={promise.id}
+                    language={language}
+                    onSelect={handleSelectDashboardPromise}
+                    promise={promise}
+                  />
+                ))}
               </div>
+
+              {selectedDashboardPromise ? (
+                <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+                  <SheetTrigger asChild>
+                    <Button className="dashboard-mobile-detail-trigger" type="button" variant="outline">
+                      <span>{localize(uiCopy.promiseDetail, language)}</span>
+                      <strong>{localize(selectedDashboardPromise.title, language)}</strong>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="dashboard-detail-sheet" side="right">
+                    <SheetHeader>
+                      <SheetTitle>{localize(uiCopy.promiseDetail, language)}</SheetTitle>
+                      <SheetDescription>{localize(selectedDashboardPromise.title, language)}</SheetDescription>
+                    </SheetHeader>
+                    <div className="dashboard-detail-sheet__body">
+                      <PromiseDetail
+                        compact
+                        contextNoteRecords={contextNoteRecords}
+                        evidenceRecords={evidenceRecords}
+                        language={language}
+                        onAddContextNote={handleAddContextNote}
+                        onAddEvidence={handleAddEvidence}
+                        promise={selectedDashboardPromise}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              ) : null}
             </section>
 
-            <aside className="content-stack context-rail">
-              <section className="paper-panel">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.watched, language)}</p>
-                  <h2>{localize(uiCopy.candidates, language)}</h2>
-                </div>
-                <div className="candidate-list">
-                  {candidates
-                    .filter((candidate) => followedCandidateIds.includes(candidate.id))
-                    .map((candidate) => (
-                      <CandidateCard
-                        compact
-                        key={candidate.id}
-                        candidate={candidate}
-                        language={language}
-                        onSelect={(candidateId) => {
-                          handleSelectCandidate(candidateId);
-                          setView("manifestos");
-                        }}
-                      />
-                    ))}
-                </div>
-              </section>
-
-              <section className="paper-panel">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.recent, language)}</p>
-                  <h2>{localize(uiCopy.evidence, language)}</h2>
-                </div>
-                <div className="activity-list">
-                  {recentEvidence.slice(0, 3).map((item) => {
-                    const promise = promises.find((promiseItem) => promiseItem.id === item.promiseId);
-                    const note = localizeUserText(item.note, language);
-                    return (
-                      <article className="activity-item" key={item.id}>
-                        <span className="activity-item__icon">
-                          <Icon name={item.createdOffline ? "signal" : "shield"} />
-                        </span>
-                        <div>
-                          <strong>
-                            {promise
-                              ? localize(sectorLabels[promise.sector], language)
-                              : localize(uiCopy.promiseDetail, language)}{" "}
-                            {localize(uiCopy.evidence, language)}
-                          </strong>
-                          <p>{note.text}</p>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
+            <aside className="dashboard-detail" aria-label={localize(uiCopy.promiseDetail, language)}>
+              <PromiseDetail
+                compact
+                contextNoteRecords={contextNoteRecords}
+                evidenceRecords={evidenceRecords}
+                language={language}
+                onAddContextNote={handleAddContextNote}
+                onAddEvidence={handleAddEvidence}
+                promise={selectedDashboardPromise}
+              />
             </aside>
           </section>
         ) : (
