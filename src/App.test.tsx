@@ -1,13 +1,31 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+
+const originalMatchMedia = window.matchMedia;
 
 function renderApp() {
   return {
     user: userEvent.setup(),
     ...render(<App />),
   };
+}
+
+function mockMobileViewport(matches = true) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
 }
 
 async function openDetailTab(
@@ -17,6 +35,13 @@ async function openDetailTab(
 ) {
   await user.click(within(detail).getByRole("tab", { name: tabName }));
 }
+
+afterEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: originalMatchMedia,
+  });
+});
 
 describe("Manifesto app", () => {
   it("renders the dashboard with followed promises, status counts, and privacy indicators", () => {
@@ -143,6 +168,21 @@ describe("Manifesto app", () => {
     });
     await openDetailTab(user, detail, "History");
     expect(within(dashboard).getByText(/The harvest-season deadline passed/)).toBeInTheDocument();
+  });
+
+  it("opens selected dashboard promise detail in a mobile sheet", async () => {
+    mockMobileViewport();
+    const { user } = renderApp();
+
+    await user.click(screen.getByRole("button", { name: /view details for grade feeder roads/i }));
+
+    const detailSheet = await screen.findByRole("dialog", { name: "Promise detail" });
+    expect(
+      within(detailSheet).getByRole("region", {
+        name: "Grade feeder roads before harvest season",
+      }),
+    ).toBeInTheDocument();
+    expect(within(detailSheet).getByText(/Farmers were promised graded feeder roads/)).toBeInTheDocument();
   });
 
   it("requires a source label and note before adding anonymous evidence", async () => {
