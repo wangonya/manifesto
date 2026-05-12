@@ -1,17 +1,18 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
 import {
   candidates,
   contextNotes,
-  evidence,
+  evidence as seededEvidence,
   promises,
   statusHistory,
-  syncQueue,
+  syncQueue as seededSyncQueue,
   type Candidate,
   type Evidence as EvidenceRecord,
   type PromiseRecord,
   type PromiseStatus,
   type StatusHistory as StatusHistoryRecord,
+  type SyncEnvelope,
 } from "./data";
 import {
   filterCandidates,
@@ -60,6 +61,62 @@ const evidenceTypeLabels: Record<EvidenceRecord["type"], string> = {
   photo: "Photo",
   public_record: "Public record",
 };
+
+const defaultSourceLabels = [
+  "Anonymous resident report",
+  "Community meeting notes",
+  "Public notice board",
+  "Local committee minutes",
+];
+
+const sourceLabelsBySector: Record<string, string[]> = {
+  Education: [
+    "Constituency bursary notice board",
+    "School heads circular",
+    "Parent association report",
+    "Public awards list",
+  ],
+  Health: [
+    "Anonymous patient report",
+    "Clinic watch group",
+    "County health notice board",
+    "Facility staffing roster",
+  ],
+  Housing: [
+    "Tenant safety volunteer report",
+    "Factory-area residents report",
+    "Public inspection notice",
+    "Anonymous rental risk map",
+  ],
+  Infrastructure: [
+    "Farmer transport group report",
+    "Road works notice board",
+    "Ward administrator update",
+    "Site inspection photo log",
+  ],
+  Jobs: [
+    "Market traders meeting",
+    "Public works notice board",
+    "Youth group report",
+    "County enterprise office memo",
+  ],
+  Safety: [
+    "Resident safety walk report",
+    "Bus stage traders report",
+    "Streetlight maintenance notice",
+    "Community policing forum notes",
+  ],
+  Water: [
+    "Water users committee minutes",
+    "Borehole caretaker report",
+    "Ward water office notice",
+    "Community water point log",
+  ],
+};
+
+function getSourceLabelOptions(sector: string) {
+  return sourceLabelsBySector[sector] ?? defaultSourceLabels;
+}
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -309,14 +366,45 @@ function PromiseCard({
   );
 }
 
-function linkedEvidenceLabels(historyItem: StatusHistoryRecord) {
+type EvidenceSubmission = Pick<EvidenceRecord, "note" | "sourceLabel" | "type">;
+
+function linkedEvidenceLabels(historyItem: StatusHistoryRecord, evidenceRecords: EvidenceRecord[]) {
   return historyItem.evidenceIds
-    .map((evidenceId) => evidence.find((item) => item.id === evidenceId)?.sourceLabel)
+    .map((evidenceId) => evidenceRecords.find((item) => item.id === evidenceId)?.sourceLabel)
     .filter(Boolean)
     .join(", ");
 }
 
-function PromiseDetail({ compact = false, promise }: { compact?: boolean; promise?: PromiseRecord }) {
+function PromiseDetail({
+  compact = false,
+  evidenceRecords,
+  onAddEvidence,
+  promise,
+}: {
+  compact?: boolean;
+  evidenceRecords: EvidenceRecord[];
+  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
+  promise?: PromiseRecord;
+}) {
+  const [evidenceType, setEvidenceType] = useState<EvidenceRecord["type"]>("community_report");
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [note, setNote] = useState("");
+  const canSubmitEvidence = sourceLabel.trim() !== "" && note.trim() !== "";
+
+  function handleSubmitEvidence(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!promise || !canSubmitEvidence) return;
+
+    onAddEvidence(promise.id, {
+      type: evidenceType,
+      sourceLabel: sourceLabel.trim(),
+      note: note.trim(),
+    });
+    setSourceLabel("");
+    setNote("");
+    setEvidenceType("community_report");
+  }
+
   if (!promise) {
     return (
       <section
@@ -335,8 +423,9 @@ function PromiseDetail({ compact = false, promise }: { compact?: boolean; promis
   const candidate = getCandidateForPromise(promise);
   const manifesto = candidate ? getManifestoForCandidate(candidate.id) : undefined;
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
-  const promiseEvidence = getEvidenceForPromise(promise.id);
+  const promiseEvidence = getEvidenceForPromise(promise.id, evidenceRecords);
   const promiseHistory = getStatusHistoryForPromise(promise.id);
+  const sourceLabelOptions = getSourceLabelOptions(promise.sector);
 
   return (
     <section
@@ -422,6 +511,61 @@ function PromiseDetail({ compact = false, promise }: { compact?: boolean; promis
           </div>
           <span className="detail-count">{promiseEvidence.length}</span>
         </div>
+        <form
+          aria-label={`Add anonymous evidence for ${promise.title}`}
+          className="evidence-form"
+          onSubmit={handleSubmitEvidence}
+        >
+          <div className="evidence-form__topline">
+            <p className="eyebrow">Add evidence</p>
+            <span className="evidence-form__privacy">
+              <Icon name="shield" />
+              Identity hidden
+            </span>
+          </div>
+          <div className="evidence-form__grid">
+            <label className="form-field">
+              <span>Evidence type</span>
+              <select
+                onChange={(event) => setEvidenceType(event.target.value as EvidenceRecord["type"])}
+                value={evidenceType}
+              >
+                {(Object.keys(evidenceTypeLabels) as EvidenceRecord["type"][]).map((type) => (
+                  <option key={type} value={type}>
+                    {evidenceTypeLabels[type]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field">
+              <span>Source label</span>
+              <select
+                onChange={(event) => setSourceLabel(event.target.value)}
+                value={sourceLabel}
+              >
+                <option value="">Choose a source label</option>
+                {sourceLabelOptions.map((label) => (
+                  <option key={label} value={label}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field form-field--wide">
+              <span>Evidence note</span>
+              <textarea
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="What changed, where, and when?"
+                value={note}
+              />
+            </label>
+          </div>
+          <div className="evidence-form__actions">
+            <button disabled={!canSubmitEvidence} type="submit">
+              Add anonymous evidence
+            </button>
+          </div>
+        </form>
         {promiseEvidence.length > 0 ? (
           <ul className="detail-list">
             {promiseEvidence.map((item) => (
@@ -460,7 +604,7 @@ function PromiseDetail({ compact = false, promise }: { compact?: boolean; promis
         {promiseHistory.length > 0 ? (
           <ul className="detail-list">
             {promiseHistory.map((item) => {
-              const evidenceLabels = linkedEvidenceLabels(item);
+              const evidenceLabels = linkedEvidenceLabels(item, evidenceRecords);
               return (
                 <li className="detail-row" key={item.id}>
                   <span className="detail-row__icon">
@@ -499,6 +643,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState("All offices");
   const [sectorFilter, setSectorFilter] = useState("All sectors");
+  const [evidenceRecords, setEvidenceRecords] = useState<EvidenceRecord[]>(seededEvidence);
+  const [syncQueueRecords, setSyncQueueRecords] = useState<SyncEnvelope[]>(seededSyncQueue);
 
   const followedPromises = useMemo(
     () => getFollowedPromises(),
@@ -526,7 +672,46 @@ function App() {
   const selectedStatusCounts = getStatusCounts(selectedPromises);
   const offices = ["All offices", ...Array.from(new Set(candidates.map((candidate) => candidate.office)))];
   const sectors = ["All sectors", ...Array.from(new Set(promises.map((promise) => promise.sector)))];
-  const recentEvidence = [...evidence].sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+  const recentEvidence = [...evidenceRecords].sort((first, second) => {
+    const firstIsLocal = first.id.startsWith("evidence-local-");
+    const secondIsLocal = second.id.startsWith("evidence-local-");
+    if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
+    return second.createdAt.localeCompare(first.createdAt);
+  });
+
+  function handleAddEvidence(promiseId: string, submission: EvidenceSubmission) {
+    const createdAt = new Date().toISOString();
+    const evidenceId = `evidence-local-${Date.now()}`;
+    const nextEvidence: EvidenceRecord = {
+      id: evidenceId,
+      promiseId,
+      type: submission.type,
+      note: submission.note,
+      sourceLabel: submission.sourceLabel,
+      anonymous: true,
+      createdAt,
+      createdOffline: true,
+    };
+    const syncEnvelope: SyncEnvelope = {
+      id: `sync-${evidenceId}`,
+      entityType: "evidence",
+      entityId: evidenceId,
+      operation: "create",
+      payload: {
+        promiseId,
+        type: nextEvidence.type,
+        sourceLabel: nextEvidence.sourceLabel,
+        note: nextEvidence.note,
+        anonymous: nextEvidence.anonymous,
+        createdOffline: nextEvidence.createdOffline,
+        createdAt,
+      },
+      createdAt,
+    };
+
+    setEvidenceRecords((currentEvidence) => [nextEvidence, ...currentEvidence]);
+    setSyncQueueRecords((currentQueue) => [...currentQueue, syncEnvelope]);
+  }
 
   function handleSelectCandidate(candidateId: string) {
     setSelectedCandidateId(candidateId);
@@ -577,7 +762,7 @@ function App() {
             </span>
             <span>
               <Icon name="signal" />
-              {syncQueue.length} queued
+              {syncQueueRecords.length} queued
             </span>
           </div>
         </div>
@@ -589,7 +774,8 @@ function App() {
           <h2 id="page-title">Follow the promises that matter, without losing the wider record.</h2>
           <p>
             Seeded fictional candidates, manifestos, promises, evidence, context notes, and status history
-            are now visible for the demo. Persistence and simulated sync stay queued for later milestones.
+            are now visible for the demo. Anonymous evidence submissions are queued locally for this
+            session before persistence arrives in a later milestone.
           </p>
         </section>
 
@@ -657,7 +843,14 @@ function App() {
                   return (
                     <div className="promise-card-group" key={promise.id}>
                       <PromiseCard active={isSelected} onSelect={handleSelectPromise} promise={promise} />
-                      {isSelected ? <PromiseDetail compact promise={promise} /> : null}
+                      {isSelected ? (
+                        <PromiseDetail
+                          compact
+                          evidenceRecords={evidenceRecords}
+                          onAddEvidence={handleAddEvidence}
+                          promise={promise}
+                        />
+                      ) : null}
                     </div>
                   );
                 })}
@@ -826,7 +1019,14 @@ function App() {
                           return (
                             <div className="promise-card-group" key={promise.id}>
                               <PromiseCard active={isSelected} onSelect={handleSelectPromise} promise={promise} />
-                              {isSelected ? <PromiseDetail compact promise={promise} /> : null}
+                              {isSelected ? (
+                                <PromiseDetail
+                                  compact
+                                  evidenceRecords={evidenceRecords}
+                                  onAddEvidence={handleAddEvidence}
+                                  promise={promise}
+                                />
+                              ) : null}
                             </div>
                           );
                         })}
