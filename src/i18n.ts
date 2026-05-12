@@ -189,6 +189,7 @@ export const uiCopy = {
   ),
   office: text("Office", "Afisi", "Fonction"),
   original: text("Original", "Asili", "Original"),
+  overview: text("Overview", "Muhtasari", "Vue d'ensemble"),
   pending: text("Pending", "Inasubiri", "En attente"),
   place: text("Place", "Mahali", "Lieu"),
   primaryViews: text("Primary views", "Mitazamo mikuu", "Vues principales"),

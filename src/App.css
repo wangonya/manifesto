@@ -582,6 +582,35 @@ button {
   color: #56635b;
 }
 
+.promise-detail__tabs,
+.promise-detail__tab-content {
+  display: grid;
+  gap: 18px;
+}
+
+.promise-detail__tab-list {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 40px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 4px;
+  overflow: visible;
+}
+
+.promise-detail__tab-list [role="tab"] {
+  min-height: 34px;
+  flex: 0 1 auto;
+  padding-inline: 12px;
+}
+
+.promise-detail__tab-content > .detail-block:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .detail-facts {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 0;

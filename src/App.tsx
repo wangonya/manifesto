@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   candidates,
@@ -445,7 +446,11 @@ function StatusPill({
   children: ReactNode;
   tone: PromiseStatus;
 }) {
-  return <StatusBadge tone={tone}>{children}</StatusBadge>;
+  return (
+    <StatusBadge className="status-pill" tone={tone}>
+      {children}
+    </StatusBadge>
+  );
 }
 
 function PromiseCard({
@@ -540,7 +545,7 @@ function linkedEvidenceLabels(
     .join(", ");
 }
 
-function PromiseDetail({
+function PromiseDetailTabs({
   compact = false,
   contextNoteRecords,
   evidenceRecords,
@@ -555,7 +560,7 @@ function PromiseDetail({
   language: LanguageCode;
   onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => void;
   onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
-  promise?: PromiseRecord;
+  promise: PromiseRecord;
 }) {
   const [evidenceType, setEvidenceType] = useState<EvidenceRecord["type"]>("community_report");
   const [sourceLabelId, setSourceLabelId] = useState("");
@@ -596,30 +601,6 @@ function PromiseDetail({
     setConfidenceLabel("community report");
   }
 
-  if (!promise) {
-    return (
-      <section
-        className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
-        aria-label={localize(uiCopy.promiseDetail, language)}
-      >
-        <div className="section-heading">
-          <p className="eyebrow">{localize(uiCopy.promiseDetail, language)}</p>
-          <h2>{localize(uiCopy.selectPromise, language)}</h2>
-        </div>
-        <p className="empty-copy">
-          {localize(
-            text(
-              "Choose a promise to review checkpoints, evidence, and status history.",
-              "Chagua ahadi ili kuona hatua, ushahidi, na historia ya hali.",
-              "Choisissez une promesse pour examiner les jalons, les preuves et l'historique du statut.",
-            ),
-            language,
-          )}
-        </p>
-      </section>
-    );
-  }
-
   const candidate = getCandidateForPromise(promise);
   const manifesto = candidate ? getManifestoForCandidate(candidate.id) : undefined;
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
@@ -643,38 +624,47 @@ function PromiseDetail({
         <StatusPill tone={promise.status}>{localize(statusLabels[promise.status], language)}</StatusPill>
       </div>
 
-      <dl className="detail-facts" aria-label={localize(uiCopy.promiseFacts, language)}>
-        <div>
-          <dt>
-            <Icon name="user" />
-            {localize(uiCopy.candidate, language)}
-          </dt>
-          <dd>{candidate?.name ?? "-"}</dd>
-        </div>
-        <div>
-          <dt>
-            <Icon name="map" />
-            {localize(uiCopy.place, language)}
-          </dt>
-          <dd>{localize(promise.location, language)}</dd>
-        </div>
-        <div>
-          <dt>
-            <Icon name="calendar" />
-            {localize(uiCopy.deadline, language)}
-          </dt>
-          <dd>{formatDate(promise.deadline, language)}</dd>
-        </div>
-        <div>
-          <dt>
-            <Icon name="book" />
-            {localize(uiCopy.source, language)}
-          </dt>
-          <dd>{manifesto ? localize(manifesto.sourceLabel, language) : "-"}</dd>
-        </div>
-      </dl>
+      <Tabs className="promise-detail__tabs" defaultValue="overview">
+        <TabsList className="promise-detail__tab-list" aria-label={localize(uiCopy.promiseDetail, language)}>
+          <TabsTrigger value="overview">{localize(uiCopy.overview, language)}</TabsTrigger>
+          <TabsTrigger value="evidence">{localize(uiCopy.evidence, language)}</TabsTrigger>
+          <TabsTrigger value="context">{localize(uiCopy.context, language)}</TabsTrigger>
+          <TabsTrigger value="history">{localize(uiCopy.history, language)}</TabsTrigger>
+        </TabsList>
 
-      <div className="detail-block">
+        <TabsContent className="promise-detail__tab-content" value="overview">
+          <dl className="detail-facts" aria-label={localize(uiCopy.promiseFacts, language)}>
+            <div>
+              <dt>
+                <Icon name="user" />
+                {localize(uiCopy.candidate, language)}
+              </dt>
+              <dd>{candidate?.name ?? "-"}</dd>
+            </div>
+            <div>
+              <dt>
+                <Icon name="map" />
+                {localize(uiCopy.place, language)}
+              </dt>
+              <dd>{localize(promise.location, language)}</dd>
+            </div>
+            <div>
+              <dt>
+                <Icon name="calendar" />
+                {localize(uiCopy.deadline, language)}
+              </dt>
+              <dd>{formatDate(promise.deadline, language)}</dd>
+            </div>
+            <div>
+              <dt>
+                <Icon name="book" />
+                {localize(uiCopy.source, language)}
+              </dt>
+              <dd>{manifesto ? localize(manifesto.sourceLabel, language) : "-"}</dd>
+            </div>
+          </dl>
+
+          <div className="detail-block">
         <div className="detail-block__heading">
           <div>
             <p className="eyebrow">{localize(uiCopy.checkPoints, language)}</p>
@@ -707,9 +697,11 @@ function PromiseDetail({
             </li>
           ))}
         </ol>
-      </div>
+          </div>
+        </TabsContent>
 
-      <div className="detail-block">
+        <TabsContent className="promise-detail__tab-content" value="evidence">
+          <div className="detail-block">
         <div className="detail-block__heading">
           <div>
             <p className="eyebrow">{localize(uiCopy.evidence, language)}</p>
@@ -808,9 +800,11 @@ function PromiseDetail({
         ) : (
           <p className="empty-copy">{localize(uiCopy.noEvidence, language)}</p>
         )}
-      </div>
+          </div>
+        </TabsContent>
 
-      <div className="detail-block">
+        <TabsContent className="promise-detail__tab-content" value="context">
+          <div className="detail-block">
         <div className="detail-block__heading">
           <div>
             <p className="eyebrow">{localize(uiCopy.communityContext, language)}</p>
@@ -914,9 +908,11 @@ function PromiseDetail({
         ) : (
           <p className="empty-copy">{localize(uiCopy.noCommunityContext, language)}</p>
         )}
-      </div>
+          </div>
+        </TabsContent>
 
-      <div className="detail-block">
+        <TabsContent className="promise-detail__tab-content" value="history">
+          <div className="detail-block">
         <div className="detail-block__heading">
           <div>
             <p className="eyebrow">{localize(uiCopy.statusHistory, language)}</p>
@@ -958,8 +954,64 @@ function PromiseDetail({
         ) : (
           <p className="empty-copy">{localize(uiCopy.noStatusChanges, language)}</p>
         )}
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </section>
+  );
+}
+
+function PromiseDetail({
+  compact = false,
+  contextNoteRecords,
+  evidenceRecords,
+  language,
+  onAddContextNote,
+  onAddEvidence,
+  promise,
+}: {
+  compact?: boolean;
+  contextNoteRecords: ContextNoteRecord[];
+  evidenceRecords: EvidenceRecord[];
+  language: LanguageCode;
+  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => void;
+  onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
+  promise?: PromiseRecord;
+}) {
+  if (!promise) {
+    return (
+      <section
+        className={`paper-panel promise-detail ${compact ? "promise-detail--inline" : ""}`}
+        aria-label={localize(uiCopy.promiseDetail, language)}
+      >
+        <div className="section-heading">
+          <p className="eyebrow">{localize(uiCopy.promiseDetail, language)}</p>
+          <h2>{localize(uiCopy.selectPromise, language)}</h2>
+        </div>
+        <p className="empty-copy">
+          {localize(
+            text(
+              "Choose a promise to review checkpoints, evidence, and status history.",
+              "Chagua ahadi ili kuona hatua, ushahidi, na historia ya hali.",
+              "Choisissez une promesse pour examiner les jalons, les preuves et l'historique du statut.",
+            ),
+            language,
+          )}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <PromiseDetailTabs
+      compact={compact}
+      contextNoteRecords={contextNoteRecords}
+      evidenceRecords={evidenceRecords}
+      language={language}
+      onAddContextNote={onAddContextNote}
+      onAddEvidence={onAddEvidence}
+      promise={promise}
+    />
   );
 }
 
