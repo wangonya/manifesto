@@ -461,75 +461,6 @@ function StatusPill({
   );
 }
 
-function PromiseCard({
-  active = false,
-  language,
-  onSelect,
-  promise,
-}: {
-  active?: boolean;
-  language: LanguageCode;
-  onSelect?: (promiseId: string) => void;
-  promise: PromiseRecord;
-}) {
-  const candidate = getCandidateForPromise(promise);
-  const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
-  const promiseTitle = localize(promise.title, language);
-
-  return (
-    <article className={`promise-card ${active ? "is-active" : ""}`}>
-      <div className="promise-card__topline">
-        <StatusPill tone={promise.status}>{localize(statusLabels[promise.status], language)}</StatusPill>
-        <span className="promise-card__sector">{localize(sectorLabels[promise.sector], language)}</span>
-      </div>
-      <h3>
-        {onSelect ? (
-          <Button
-            aria-label={`${localize(uiCopy.viewDetailsFor, language)} ${promiseTitle}`}
-            aria-pressed={active}
-            className="promise-card__title-button h-auto p-0 text-left hover:bg-transparent"
-            onClick={() => onSelect(promise.id)}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <span>{promiseTitle}</span>
-            <Icon name="chevron" />
-          </Button>
-        ) : (
-          promiseTitle
-        )}
-      </h3>
-      <p>{localize(promise.summary, language)}</p>
-      <dl className="promise-meta">
-        <div>
-          <dt>
-            <Icon name="user" />
-            {localize(uiCopy.candidate, language)}
-          </dt>
-          <dd>{candidate?.name ?? "-"}</dd>
-        </div>
-        <div>
-          <dt>
-            <Icon name="calendar" />
-            {localize(uiCopy.deadline, language)}
-          </dt>
-          <dd>{formatDate(promise.deadline, language)}</dd>
-        </div>
-        <div>
-          <dt>
-            <Icon name="check" />
-            {localize(uiCopy.checkPoints, language)}
-          </dt>
-          <dd>
-            {completed} / {promise.checkpoints.length}
-          </dd>
-        </div>
-      </dl>
-    </article>
-  );
-}
-
 type EvidenceSubmission = {
   note: string;
   sourceLabel: LocalizedText;
@@ -1058,18 +989,8 @@ function App() {
     candidates.find((candidate) => candidate.id === selectedCandidateId) ?? candidates[0];
   const selectedManifesto = getManifestoForCandidate(selectedCandidate.id);
   const selectedPromises = getPromisesForCandidate(selectedCandidate.id);
-  const selectedPromiseIds = new Set(selectedPromises.map((promise) => promise.id));
   const selectedPromise =
     promises.find((promise) => promise.id === selectedPromiseId) ?? selectedPromises[0] ?? priorityPromises[0];
-  const selectedContextNotes = [...contextNoteRecords]
-    .filter((note) => selectedPromiseIds.has(note.promiseId))
-    .sort((first, second) => {
-      const firstIsLocal = first.id.startsWith("context-local-");
-      const secondIsLocal = second.id.startsWith("context-local-");
-      if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
-      return second.createdAt.localeCompare(first.createdAt);
-    });
-  const selectedStatusHistory = statusHistory.filter((item) => selectedPromiseIds.has(item.promiseId));
   const selectedStatusCounts = getStatusCounts(selectedPromises);
   const followedStatusCounts = useMemo(
     () => getStatusCounts(followedPromises),
@@ -1439,110 +1360,51 @@ function App() {
                     <dd>{languageOptions.map((option) => option.label).join(", ")}</dd>
                   </div>
                 </dl>
-                <div className="status-grid" aria-label={localize(uiCopy.selectedManifestoStatusCounts, language)}>
-                  {(Object.keys(selectedStatusCounts) as PromiseStatus[]).map((status) => (
-                    <div className="status-count" key={status}>
-                      <StatusPill tone={status}>{localize(statusLabels[status], language)}</StatusPill>
-                      <strong>{selectedStatusCounts[status]}</strong>
+                <StatusStrip
+                  counts={selectedStatusCounts}
+                  label={localize(uiCopy.selectedManifestoStatusCounts, language)}
+                  language={language}
+                />
+              </section>
+
+              <section className="manifesto-workspace" aria-label={localize(uiCopy.manifesto, language)}>
+                <section className="manifesto-promise-list" aria-label={localize(uiCopy.selectPromise, language)}>
+                  {Array.from(new Set(selectedPromises.map((promise) => promise.sector))).map((sector) => (
+                    <div className="sector-group" key={sector}>
+                      <div className="section-heading">
+                        <p className="eyebrow">{localize(uiCopy.sector, language)}</p>
+                        <h2>{localize(sectorLabels[sector], language)}</h2>
+                      </div>
+                      <div className="promise-row-list">
+                        {selectedPromises
+                          .filter((promise) => promise.sector === sector)
+                          .map((promise) => (
+                            <PromiseRow
+                              active={selectedPromise?.id === promise.id}
+                              key={promise.id}
+                              language={language}
+                              onSelect={handleSelectPromise}
+                              promise={promise}
+                            />
+                          ))}
+                      </div>
                     </div>
                   ))}
-                </div>
-              </section>
+                </section>
 
-              <section className="promise-sections" aria-label={localize(uiCopy.manifesto, language)}>
-                {Array.from(new Set(selectedPromises.map((promise) => promise.sector))).map((sector) => (
-                  <div className="sector-group" key={sector}>
-                    <div className="section-heading">
-                      <p className="eyebrow">{localize(uiCopy.sector, language)}</p>
-                      <h2>{localize(sectorLabels[sector], language)}</h2>
-                    </div>
-                    <div className="card-stack">
-                      {selectedPromises
-                        .filter((promise) => promise.sector === sector)
-                        .map((promise) => {
-                          const isSelected = selectedPromise?.id === promise.id;
-                          return (
-                            <div className="promise-card-group" key={promise.id}>
-                              <PromiseCard
-                                active={isSelected}
-                                language={language}
-                                onSelect={handleSelectPromise}
-                                promise={promise}
-                              />
-                              {isSelected ? (
-                                <PromiseDetail
-                                  compact
-                                  contextNoteRecords={contextNoteRecords}
-                                  evidenceRecords={evidenceRecords}
-                                  language={language}
-                                  onAddContextNote={handleAddContextNote}
-                                  onAddEvidence={handleAddEvidence}
-                                  promise={promise}
-                                />
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                ))}
+                <aside className="manifesto-promise-detail" aria-label={localize(uiCopy.promiseDetail, language)}>
+                  <PromiseDetail
+                    compact
+                    contextNoteRecords={contextNoteRecords}
+                    evidenceRecords={evidenceRecords}
+                    language={language}
+                    onAddContextNote={handleAddContextNote}
+                    onAddEvidence={handleAddEvidence}
+                    promise={selectedPromise}
+                  />
+                </aside>
               </section>
             </section>
-
-            <aside className="content-stack context-rail">
-              <section className="paper-panel">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.context, language)}</p>
-                  <h2>{localize(uiCopy.contextNotes, language)}</h2>
-                </div>
-                <div className="activity-list">
-                  {selectedContextNotes.length > 0 ? (
-                    selectedContextNotes.slice(0, 3).map((note) => {
-                      const localizedNote = localizeUserText(note.note, language);
-                      return (
-                        <article className="activity-item" key={note.id}>
-                          <span className="activity-item__icon">
-                            <Icon name="map" />
-                          </span>
-                          <div>
-                            <strong>{localize(confidenceLabels[note.confidenceLabel], language)}</strong>
-                            <p>{localizedNote.text}</p>
-                          </div>
-                        </article>
-                      );
-                    })
-                  ) : (
-                    <p className="empty-copy">{localize(uiCopy.noContextForCandidate, language)}</p>
-                  )}
-                </div>
-              </section>
-
-              <section className="paper-panel">
-                <div className="section-heading">
-                  <p className="eyebrow">{localize(uiCopy.history, language)}</p>
-                  <h2>{localize(uiCopy.statusChanges, language)}</h2>
-                </div>
-                <div className="activity-list">
-                  {selectedStatusHistory.length > 0 ? (
-                    selectedStatusHistory.slice(0, 3).map((item) => (
-                      <article className="activity-item" key={item.id}>
-                        <span className="activity-item__icon">
-                          <Icon name="check" />
-                        </span>
-                        <div>
-                          <StatusPill tone={item.status}>
-                            {localize(statusLabels[item.status], language)}
-                          </StatusPill>
-                          <p>{localize(item.reason, language)}</p>
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <p className="empty-copy">{localize(uiCopy.noStatusForCandidate, language)}</p>
-                  )}
-                </div>
-              </section>
-            </aside>
           </section>
         )}
       </main>

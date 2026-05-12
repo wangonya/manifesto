@@ -295,6 +295,6 @@ describe("Manifesto app", () => {
       name: "Open three 24-hour maternal health clinics",
     });
     await openDetailTab(user, browserDetail, "Context");
-    expect(within(browser).getAllByText(contextNote).length).toBeGreaterThan(1);
+    expect(within(browserDetail).getByText(contextNote)).toBeInTheDocument();
   });
 });
