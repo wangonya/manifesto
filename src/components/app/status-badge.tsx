@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { PromiseStatus } from "@/data";
 
-const statusClassNames: Record<PromiseStatus, string> = {
-  kept: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  in_progress: "bg-amber-50 text-amber-800 border-amber-200",
-  missed: "bg-red-50 text-red-800 border-red-200",
-  not_started: "bg-stone-50 text-stone-700 border-stone-200",
-  at_risk: "bg-orange-50 text-orange-800 border-orange-200",
+const statusDotClassNames: Record<PromiseStatus, string> = {
+  kept: "bg-emerald-500",
+  in_progress: "bg-amber-500",
+  missed: "bg-red-500",
+  not_started: "bg-zinc-400",
+  at_risk: "bg-orange-500",
 };
 
 type StatusBadgeProps = {
@@ -21,9 +21,13 @@ type StatusBadgeProps = {
 export function StatusBadge({ children, className, tone }: StatusBadgeProps) {
   return (
     <Badge
-      className={cn("border font-semibold uppercase", statusClassNames[tone], className)}
+      className={cn(
+        "gap-1.5 border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground",
+        className,
+      )}
       variant="outline"
     >
+      <span className={cn("size-1.5 rounded-full", statusDotClassNames[tone])} aria-hidden="true" />
       {children}
     </Badge>
   );
