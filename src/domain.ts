@@ -8,13 +8,23 @@ import {
   type Candidate,
   type ContextNote,
   type Evidence as EvidenceRecord,
+  type OfficeCode,
   type PromiseRecord,
   type PromiseStatus,
+  type RegionCode,
+  type SectorCode,
 } from "./data";
+import {
+  localize,
+  officeLabels,
+  regionLabels,
+  sectorLabels,
+  type LanguageCode,
+} from "./i18n";
 
 export const followedCandidateIds = ["cand-amina", "cand-david", "cand-mary"];
-export const followedSectors = ["Health", "Water", "Education", "Safety"];
-export const followedRegions = ["Lakeside County", "Kijani East", "Mto Ward"];
+export const followedSectors: SectorCode[] = ["health", "water", "education", "safety"];
+export const followedRegions: RegionCode[] = ["lakeside_county", "kijani_east", "mto_ward"];
 
 export const statusPriority: Record<PromiseStatus, number> = {
   missed: 0,
@@ -86,15 +96,19 @@ export function isElectedCandidate(candidate: Candidate) {
   return candidate.status === "elected";
 }
 
+export function isCandidateInFollowedRegion(candidate: Candidate) {
+  return isElectedCandidate(candidate) && followedRegions.includes(candidate.region);
+}
+
 export function getFollowedPromises() {
   return promises.filter((promise) => {
     const candidate = getCandidateForPromise(promise);
     const isExplicitlyFollowed = candidate ? followedCandidateIds.includes(candidate.id) : false;
     return (
       candidate &&
-      (isExplicitlyFollowed ||
+        (isExplicitlyFollowed ||
         followedSectors.includes(promise.sector) ||
-        (isElectedCandidate(candidate) && followedRegions.includes(candidate.region)))
+        isCandidateInFollowedRegion(candidate))
     );
   });
 }
@@ -110,30 +124,39 @@ export function getPriorityPromises(items: PromiseRecord[] = getFollowedPromises
 }
 
 export function filterCandidates({
+  language,
   officeFilter,
   query,
   sectorFilter,
 }: {
-  officeFilter: string;
+  language: LanguageCode;
+  officeFilter: "all" | OfficeCode;
   query: string;
-  sectorFilter: string;
+  sectorFilter: "all" | SectorCode;
 }) {
   const normalizedQuery = query.trim().toLowerCase();
   return candidates.filter((candidate) => {
     const candidatePromises = getPromisesForCandidate(candidate.id);
     const searchText = [
       candidate.name,
-      candidate.office,
-      candidate.region,
-      candidate.partyOrAffiliation,
-      ...candidatePromises.map((promise) => `${promise.title} ${promise.sector} ${promise.location}`),
+      localize(officeLabels[candidate.office], language),
+      localize(regionLabels[candidate.region], language),
+      localize(candidate.partyOrAffiliation, language),
+      ...candidatePromises.map((promise) =>
+        [
+          localize(promise.title, language),
+          localize(sectorLabels[promise.sector], language),
+          localize(promise.location, language),
+          localize(promise.summary, language),
+        ].join(" "),
+      ),
     ]
       .join(" ")
       .toLowerCase();
     const matchesQuery = !normalizedQuery || searchText.includes(normalizedQuery);
-    const matchesOffice = officeFilter === "All offices" || candidate.office === officeFilter;
+    const matchesOffice = officeFilter === "all" || candidate.office === officeFilter;
     const matchesSector =
-      sectorFilter === "All sectors" ||
+      sectorFilter === "all" ||
       candidatePromises.some((promise) => promise.sector === sectorFilter);
     return matchesQuery && matchesOffice && matchesSector;
   });
