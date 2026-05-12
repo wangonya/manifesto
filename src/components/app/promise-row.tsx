@@ -29,23 +29,23 @@ export function PromiseRow({ active = false, language, onSelect, promise }: Prom
       aria-label={`${localize(uiCopy.viewDetailsFor, language)} ${promiseTitle}`}
       aria-pressed={active}
       className={cn(
-        "grid w-full gap-3 rounded-lg border border-border bg-card p-4 text-left text-card-foreground transition hover:border-primary/40 hover:bg-accent/50",
-        active && "border-primary/50 bg-accent shadow-[inset_4px_0_0_var(--primary)]",
+        "grid w-full gap-2.5 rounded-md border border-transparent bg-background p-3 text-left text-card-foreground transition hover:bg-muted/50",
+        active && "border-border bg-muted/60",
       )}
       onClick={() => onSelect(promise.id)}
       type="button"
     >
       <span className="flex items-start justify-between gap-3">
         <StatusBadge tone={promise.status}>{localize(statusLabels[promise.status], language)}</StatusBadge>
-        <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />
       </span>
       <span className="grid gap-2">
-        <span className="font-semibold leading-snug text-foreground">{promiseTitle}</span>
-        <span className="text-sm leading-relaxed text-muted-foreground">
+        <span className="font-medium leading-snug text-foreground">{promiseTitle}</span>
+        <span className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
           {localize(promise.summary, language)}
         </span>
       </span>
-      <span className="grid gap-2 text-xs font-semibold text-muted-foreground sm:grid-cols-3">
+      <span className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
         <span className="inline-flex items-center gap-1.5">
           <UserRound className="size-3.5" aria-hidden="true" />
           {candidate?.name ?? "-"}

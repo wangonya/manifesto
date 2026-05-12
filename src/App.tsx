@@ -93,38 +93,38 @@ const confidenceLabelKeys: ContextNoteRecord["confidenceLabel"][] = [
 
 const pageWidthClass =
   "mx-auto w-[calc(100%_-_3rem)] max-w-[1320px] max-[820px]:w-[calc(100%_-_2rem)] max-[520px]:w-[calc(100%_-_1.5rem)]";
-const panelClass = "rounded-lg border border-border bg-card p-6 text-card-foreground max-[820px]:p-5 max-[520px]:p-4";
-const inlineDetailPanelClass = "border-[#b7d2c2] bg-[#fbfefb] shadow-[inset_4px_0_0_#9bc5aa]";
-const eyebrowClass = "mb-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-muted-foreground";
-const sectionHeadingClass = "mb-4";
-const sectionTitleClass = "m-0 text-[1.15rem] leading-tight tracking-normal text-[#17241d]";
-const iconBoxClass = "grid shrink-0 place-items-center rounded-lg border border-[#c9d8ce] bg-[#edf5ee] text-primary";
+const panelClass = "rounded-lg border border-border/80 bg-background p-5 text-card-foreground max-[820px]:p-4";
+const inlineDetailPanelClass = "bg-background";
+const eyebrowClass = "mb-2 text-sm font-medium text-muted-foreground";
+const sectionHeadingClass = "mb-3";
+const sectionTitleClass = "m-0 text-base font-medium leading-tight tracking-normal text-foreground";
+const iconBoxClass = "grid shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground";
 const factGridClass = "grid grid-cols-1 gap-3 min-[821px]:grid-cols-4";
 const manifestoFactGridClass = "mt-4 grid grid-cols-1 gap-3 min-[821px]:grid-cols-3";
-const factItemClass = "border-t border-[#e4dfd3] pt-3";
+const factItemClass = "border-t border-border pt-3";
 const factTermClass =
-  "flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-muted-foreground";
-const factDefinitionClass = "mt-1 text-sm font-semibold text-foreground";
-const detailBlockClass = "grid gap-3 border-t border-[#e6e1d5] pt-4 first:border-t-0 first:pt-0";
+  "flex items-center gap-1.5 text-xs font-medium text-muted-foreground";
+const factDefinitionClass = "mt-1 text-sm font-medium text-foreground";
+const detailBlockClass = "grid gap-3 border-t border-border pt-4 first:border-t-0 first:pt-0";
 const detailBlockHeadingClass =
   "flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
 const detailCountClass =
-  "rounded-full border border-input bg-[#faf8f0] px-2.5 py-1 text-xs font-extrabold uppercase text-muted-foreground";
+  "text-sm font-medium text-muted-foreground";
 const detailListClass = "grid list-none gap-2.5 p-0";
 const detailRowClass =
-  "grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-[#e6e1d5] pt-3 first:border-t-0 first:pt-0 max-[520px]:grid-cols-1";
-const detailIconClass = "grid size-8 place-items-center rounded-lg border border-[#d3ddce] bg-card text-muted-foreground";
+  "grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0 max-[520px]:grid-cols-1";
+const detailIconClass = "grid size-8 place-items-center rounded-md border border-border bg-background text-muted-foreground";
 const detailToplineClass =
   "flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
 const tagListClass = "mt-2 flex flex-wrap gap-1.5";
-const tagClass = "rounded-full border border-[#e0dbce] bg-card px-2 py-1 text-xs font-bold text-muted-foreground";
-const emptyCopyClass = "m-0 border-t border-[#e6e1d5] pt-3.5 text-sm text-muted-foreground";
-const evidenceFormClass = "grid gap-3 rounded-lg border border-border bg-[#faf8f0] p-3.5";
+const tagClass = "rounded-md border border-border bg-background px-2 py-0.5 text-xs text-muted-foreground";
+const emptyCopyClass = "m-0 border-t border-border pt-3.5 text-sm text-muted-foreground";
+const evidenceFormClass = "grid gap-3 rounded-lg border border-border bg-muted/20 p-3.5";
 const evidenceFormToplineClass =
   "flex items-center justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch";
 const evidenceFormGridClass = "grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 max-[520px]:grid-cols-1";
-const formFieldClass = "grid gap-1.5 text-sm font-bold text-muted-foreground";
-const nativeFieldClass = "w-full rounded-lg border border-input bg-card px-3 py-2.5 text-foreground";
+const formFieldClass = "grid gap-1.5 text-sm font-medium text-muted-foreground";
+const nativeFieldClass = "w-full rounded-md border border-input bg-background px-3 py-2.5 text-foreground";
 
 type SourceLabelOption = {
   id: string;
@@ -448,8 +448,8 @@ function CandidateCard({
   return (
     <button
       className={cn(
-        "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] gap-3 rounded-lg border border-border bg-card p-3.5 text-left text-card-foreground transition hover:border-[#b7d2c2] hover:bg-[#f6fbf6]",
-        active && "border-[#b7d2c2] bg-[#f6fbf6]",
+        "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] gap-3 rounded-md border border-transparent bg-background p-3 text-left text-card-foreground transition hover:bg-muted/50",
+        active && "border-border bg-muted/60",
       )}
       onClick={() => onSelect(candidate.id)}
       type="button"
@@ -458,7 +458,7 @@ function CandidateCard({
         <Icon name={isElectedCandidate(candidate) ? "pin" : "archive"} />
       </span>
       <span>
-        <span className="block font-bold text-[#1f2d25]">{candidate.name}</span>
+        <span className="block font-medium text-foreground">{candidate.name}</span>
         <span className="mt-0.5 block text-sm text-muted-foreground">
           {localize(officeLabels[candidate.office], language)} |{" "}
           {localize(regionLabels[candidate.region], language)}
@@ -479,7 +479,7 @@ function CandidateCard({
           ) : null}
         </span>
       </span>
-      <span className={cn("text-muted-foreground", compact && "hidden")}>
+      <span className={cn("text-muted-foreground/70", compact && "hidden")}>
         <Icon name="chevron" />
       </span>
     </button>
@@ -494,7 +494,7 @@ function StatusPill({
   tone: PromiseStatus;
 }) {
   return (
-    <StatusBadge className="w-fit px-2 py-1 text-[0.68rem] font-extrabold leading-none tracking-[0.08em]" tone={tone}>
+    <StatusBadge className="w-fit" tone={tone}>
       {children}
     </StatusBadge>
   );
@@ -596,7 +596,7 @@ function PromiseDetailTabs({
       <div className="flex items-start justify-between gap-4 max-[520px]:grid max-[520px]:justify-stretch">
         <div>
           <p className={eyebrowClass}>{localize(uiCopy.promiseDetail, language)}</p>
-          <h2 className="m-0 text-[clamp(1.35rem,2vw,2rem)] leading-tight tracking-normal text-[#17241d]" id={`detail-${promise.id}`}>
+          <h2 className="m-0 text-[clamp(1.35rem,2vw,2rem)] font-semibold leading-tight tracking-normal text-foreground" id={`detail-${promise.id}`}>
             {promiseTitle}
           </h2>
           <p className="mt-2.5 text-muted-foreground">{localize(promise.summary, language)}</p>
@@ -659,7 +659,7 @@ function PromiseDetailTabs({
         <div className={detailBlockHeadingClass}>
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.checkPoints, language)}</p>
-            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">
+            <h3 className="m-0 text-base font-medium leading-tight tracking-normal text-foreground">
               {completed} / {promise.checkpoints.length} {localize(uiCopy.complete, language)}
             </h3>
           </div>
@@ -669,16 +669,16 @@ function PromiseDetailTabs({
           {promise.checkpoints.map((checkpoint) => (
             <li
               className={cn(
-                "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#e4dfd3] bg-[#faf8f0] p-3 max-[520px]:grid-cols-1",
-                checkpoint.complete && "border-[#c8dacd] bg-[#f0f8f2]",
+                "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-background p-3 max-[520px]:grid-cols-1",
+                checkpoint.complete && "bg-muted/50",
               )}
               key={`${promise.id}-${localize(checkpoint.label, "en")}`}
             >
-              <span className={cn("grid size-8 place-items-center rounded-lg border border-[#d3ddce] bg-card text-muted-foreground", checkpoint.complete && "border-[#b8d4c0] bg-[#e5f2e8] text-primary")}>
+              <span className={cn("grid size-8 place-items-center rounded-md border border-border bg-background text-muted-foreground", checkpoint.complete && "text-foreground")}>
                 <Icon name={checkpoint.complete ? "check" : "clock"} />
               </span>
               <div>
-                <strong className="block text-sm font-bold text-foreground">{localize(checkpoint.label, language)}</strong>
+                <strong className="block text-sm font-medium text-foreground">{localize(checkpoint.label, language)}</strong>
                 <span className="mt-0.5 block text-sm text-muted-foreground">
                   {localize(uiCopy.due, language)} {formatDate(checkpoint.dueDate, language)}
                 </span>
@@ -699,7 +699,7 @@ function PromiseDetailTabs({
         <div className={detailBlockHeadingClass}>
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.evidence, language)}</p>
-            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">{localize(uiCopy.anonymousCommunityRecord, language)}</h3>
+            <h3 className="m-0 text-base font-medium leading-tight tracking-normal text-foreground">{localize(uiCopy.anonymousCommunityRecord, language)}</h3>
           </div>
           <span className={detailCountClass}>{promiseEvidence.length}</span>
         </div>
@@ -710,7 +710,7 @@ function PromiseDetailTabs({
         >
           <div className={evidenceFormToplineClass}>
             <p className={cn(eyebrowClass, "m-0")}>{localize(uiCopy.addEvidence, language)}</p>
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Icon name="shield" />
               {localize(uiCopy.identityHidden, language)}
             </span>
@@ -771,8 +771,8 @@ function PromiseDetailTabs({
                   </span>
                   <div>
                     <div className={detailToplineClass}>
-                      <strong className="block text-sm font-bold text-foreground">{localize(evidenceTypeLabels[item.type], language)}</strong>
-                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
+                      <strong className="block text-sm font-medium text-foreground">{localize(evidenceTypeLabels[item.type], language)}</strong>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
                     <p className="mt-1.5 text-sm text-muted-foreground">{note.text}</p>
                     <div className={tagListClass}>
@@ -804,7 +804,7 @@ function PromiseDetailTabs({
         <div className={detailBlockHeadingClass}>
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.communityContext, language)}</p>
-            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">
+            <h3 className="m-0 text-base font-medium leading-tight tracking-normal text-foreground">
               {localize(
                 text(
                   "Anonymous notes and fact checks",
@@ -824,7 +824,7 @@ function PromiseDetailTabs({
         >
           <div className={evidenceFormToplineClass}>
             <p className={cn(eyebrowClass, "m-0")}>{localize(uiCopy.addContext, language)}</p>
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Icon name="shield" />
               {localize(uiCopy.noIdentityCollected, language)}
             </span>
@@ -879,8 +879,8 @@ function PromiseDetailTabs({
                   </span>
                   <div>
                     <div className={detailToplineClass}>
-                      <strong className="block text-sm font-bold text-foreground">{localize(confidenceLabels[item.confidenceLabel], language)}</strong>
-                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
+                      <strong className="block text-sm font-medium text-foreground">{localize(confidenceLabels[item.confidenceLabel], language)}</strong>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
                     <p className="mt-1.5 text-sm text-muted-foreground">{note.text}</p>
                     <div className={tagListClass}>
@@ -913,7 +913,7 @@ function PromiseDetailTabs({
         <div className={detailBlockHeadingClass}>
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.statusHistory, language)}</p>
-            <h3 className="m-0 text-base leading-tight tracking-normal text-[#17241d]">{localize(uiCopy.statusReason, language)}</h3>
+            <h3 className="m-0 text-base font-medium leading-tight tracking-normal text-foreground">{localize(uiCopy.statusReason, language)}</h3>
           </div>
           <span className={detailCountClass}>{promiseHistory.length}</span>
         </div>
@@ -931,7 +931,7 @@ function PromiseDetailTabs({
                       <StatusPill tone={item.status}>
                         {localize(statusLabels[item.status], language)}
                       </StatusPill>
-                      <span className="shrink-0 text-xs font-bold text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(item.createdAt, language)}</span>
                     </div>
                     <p className="mt-1.5 text-sm text-muted-foreground">{localize(item.reason, language)}</p>
                     <div className={tagListClass}>
@@ -1170,22 +1170,22 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-[#e3dfd2] bg-background/95">
+      <header className="border-b border-border bg-background/95">
         <div className={cn(pageWidthClass, "flex items-center justify-between gap-6 py-6 max-[820px]:grid max-[820px]:items-start max-[820px]:justify-start")}>
           <div className="flex gap-3.5" aria-label="Manifesto">
-            <div className={cn(iconBoxClass, "size-11")} aria-hidden="true">
+            <div className={cn(iconBoxClass, "size-10 bg-muted/30")} aria-hidden="true">
               <Icon name="book" />
             </div>
             <div>
-              <h1 className="m-0 text-xl font-bold tracking-normal text-[#17241d]">Manifesto</h1>
+              <h1 className="m-0 text-xl font-semibold tracking-normal text-foreground">Manifesto</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">{localize(uiCopy.brandTagline, language)}</p>
             </div>
           </div>
           <div className="flex flex-wrap justify-end gap-2.5 max-[820px]:items-start max-[820px]:justify-start">
-            <label className="inline-grid grid-cols-[auto_auto] items-center gap-2 rounded-full border border-input bg-card py-1.5 pr-2 pl-3 text-sm font-bold text-muted-foreground">
+            <label className="inline-grid grid-cols-[auto_auto] items-center gap-2 rounded-md border border-input bg-background py-1.5 pr-2 pl-3 text-sm font-medium text-muted-foreground">
               <span>{localize(uiCopy.language, language)}</span>
               <select
-                className="min-w-28 rounded-full border border-[#e0dbce] bg-[#faf8f0] px-2 py-1 text-foreground"
+                className="min-w-28 rounded-md border border-input bg-background px-2 py-1 text-foreground"
                 aria-label={localize(uiCopy.language, language)}
                 onChange={(event) => setLanguage(event.target.value as LanguageCode)}
                 value={language}
@@ -1197,11 +1197,11 @@ function App() {
                 ))}
               </select>
             </label>
-            <Badge className="flex items-center gap-1.5 rounded-full border-input bg-card px-3 py-2 text-sm font-bold text-muted-foreground" variant="outline">
+            <Badge className="flex items-center gap-1.5 rounded-md border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground" variant="outline">
               <Icon name="shield" />
               {localize(uiCopy.anonymousByDefault, language)}
             </Badge>
-            <Badge className="flex items-center gap-1.5 rounded-full border-input bg-card px-3 py-2 text-sm font-bold text-muted-foreground" variant="outline">
+            <Badge className="flex items-center gap-1.5 rounded-md border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground" variant="outline">
               <Icon name="signal" />
               {syncQueueRecords.length} {localize(uiCopy.queued, language)}
             </Badge>
@@ -1210,10 +1210,10 @@ function App() {
       </header>
 
       <main className={cn(pageWidthClass, "py-8 pb-16 max-[520px]:py-6 max-[520px]:pb-12")}>
-        <div className="border-b border-[#e3dfd2] pb-5">
+        <div className="border-b border-border pb-5">
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.voiceAndAccountability, language)}</p>
-            <h2 className="m-0 text-[clamp(1.55rem,3vw,2.5rem)] leading-none tracking-normal text-[#17241d] max-[520px]:text-[1.75rem]" id="page-title">
+            <h2 className="m-0 text-[clamp(1.55rem,3vw,2.5rem)] font-semibold leading-tight tracking-normal text-foreground max-[520px]:text-[1.75rem]" id="page-title">
               {view === "dashboard"
                 ? localize(uiCopy.followingDashboard, language)
                 : localize(uiCopy.manifestoBrowser, language)}
@@ -1229,24 +1229,22 @@ function App() {
         <nav className="my-6 flex flex-wrap gap-2" aria-label={localize(uiCopy.primaryViews, language)}>
           <Button
             className={cn(
-              "gap-2 rounded-full border-input bg-card px-3.5 py-2.5 text-sm font-bold text-muted-foreground",
-              view === "dashboard" && "border-[#b5d1bf] bg-accent text-primary",
+              "gap-2 rounded-md text-sm font-medium",
             )}
             onClick={() => handleSelectView("dashboard")}
             type="button"
-            variant="outline"
+            variant={view === "dashboard" ? "secondary" : "ghost"}
           >
             <Icon name="pin" />
             {localize(uiCopy.followingDashboard, language)}
           </Button>
           <Button
             className={cn(
-              "gap-2 rounded-full border-input bg-card px-3.5 py-2.5 text-sm font-bold text-muted-foreground",
-              view === "manifestos" && "border-[#b5d1bf] bg-accent text-primary",
+              "gap-2 rounded-md text-sm font-medium",
             )}
             onClick={() => handleSelectView("manifestos")}
             type="button"
-            variant="outline"
+            variant={view === "manifestos" ? "secondary" : "ghost"}
           >
             <Icon name="book" />
             {localize(uiCopy.manifestoBrowser, language)}
@@ -1256,7 +1254,7 @@ function App() {
         {view === "dashboard" ? (
           <section className="grid grid-cols-[minmax(320px,0.85fr)_minmax(0,1.25fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.followingDashboard, language)}>
             <section className="grid min-w-0 gap-4" aria-label={localize(uiCopy.priorityPromises, language)}>
-              <div className={cn(panelClass, "grid gap-4")}>
+              <div className="grid gap-3 border-b border-border pb-4">
                 <div className={sectionHeadingClass}>
                   <p className={eyebrowClass}>{localize(uiCopy.dashboard, language)}</p>
                   <h2 className={sectionTitleClass}>{localize(uiCopy.priorityPromises, language)}</h2>
@@ -1283,9 +1281,9 @@ function App() {
               {selectedDashboardPromise ? (
                 <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
                   <SheetTrigger asChild>
-                    <Button className="hidden h-auto min-h-0 w-full flex-col items-start justify-center gap-1 rounded-lg p-3.5 text-left whitespace-normal max-[820px]:flex" type="button" variant="outline">
-                      <span className="block max-w-full text-xs font-extrabold uppercase tracking-[0.08em] text-muted-foreground [overflow-wrap:anywhere]">{localize(uiCopy.promiseDetail, language)}</span>
-                      <strong className="block max-w-full text-sm leading-snug text-[#17241d]">{localize(selectedDashboardPromise.title, language)}</strong>
+                    <Button className="hidden h-auto min-h-0 w-full flex-col items-start justify-center gap-1 rounded-md p-3 text-left whitespace-normal max-[820px]:flex" type="button" variant="outline">
+                      <span className="block max-w-full text-xs text-muted-foreground [overflow-wrap:anywhere]">{localize(uiCopy.promiseDetail, language)}</span>
+                      <strong className="block max-w-full text-sm font-medium leading-snug text-foreground">{localize(selectedDashboardPromise.title, language)}</strong>
                     </Button>
                   </SheetTrigger>
                   <SheetContent className="h-[100dvh] max-h-[100dvh] w-[min(100%,420px)] max-w-none overflow-hidden px-4 pb-4" side="right">
@@ -1339,7 +1337,7 @@ function App() {
                   value={query}
                 />
               </label>
-              <label className="mt-3.5 grid gap-2 text-sm font-bold text-muted-foreground">
+              <label className="mt-3.5 grid gap-2 text-sm font-medium text-muted-foreground">
                 <span className="flex items-center gap-2">
                   <Icon name="filter" />
                   {localize(uiCopy.office, language)}
@@ -1357,7 +1355,7 @@ function App() {
                   ))}
                 </select>
               </label>
-              <label className="mt-3.5 grid gap-2 text-sm font-bold text-muted-foreground">
+              <label className="mt-3.5 grid gap-2 text-sm font-medium text-muted-foreground">
                 <span className="flex items-center gap-2">
                   <Icon name="filter" />
                   {localize(uiCopy.sector, language)}
@@ -1389,8 +1387,8 @@ function App() {
             </aside>
 
             <section className="grid gap-6">
-              <article className={cn(panelClass, "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 max-[520px]:grid-cols-1")}>
-                <div className={cn(iconBoxClass, "size-14 text-xl")}>
+              <article className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 border-b border-border pb-5 max-[520px]:grid-cols-1">
+                <div className={cn(iconBoxClass, "size-12 text-lg")}>
                   <Icon name={isElectedCandidate(selectedCandidate) ? "pin" : "archive"} />
                 </div>
                 <div>
@@ -1400,9 +1398,9 @@ function App() {
                         ? localize(uiCopy.elected, language)
                         : localize(uiCopy.archived, language)}
                     </StatusPill>
-                    <span className="text-sm font-bold text-muted-foreground">{selectedCandidate.electionYear}</span>
+                    <span className="text-sm text-muted-foreground">{selectedCandidate.electionYear}</span>
                   </div>
-                  <h2 className="m-0 text-[clamp(1.75rem,3vw,2.6rem)] leading-none tracking-normal text-[#17241d]">{selectedCandidate.name}</h2>
+                  <h2 className="m-0 text-[clamp(1.75rem,3vw,2.6rem)] font-semibold leading-tight tracking-normal text-foreground">{selectedCandidate.name}</h2>
                   <p className="mt-2 text-muted-foreground">
                     {localize(officeLabels[selectedCandidate.office], language)} |{" "}
                     {localize(regionLabels[selectedCandidate.region], language)} |{" "}
@@ -1411,7 +1409,7 @@ function App() {
                 </div>
               </article>
 
-              <section className={cn(panelClass, "grid gap-4")}>
+              <section className="grid gap-4 border-b border-border pb-5">
                 <div className={sectionHeadingClass}>
                   <p className={eyebrowClass}>{localize(uiCopy.manifesto, language)}</p>
                   <h2 className={sectionTitleClass}>

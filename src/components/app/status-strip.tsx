@@ -17,16 +17,16 @@ export function StatusStrip({ className, counts, label, language }: StatusStripP
     <div
       aria-label={label}
       className={cn(
-        "flex flex-wrap gap-2 rounded-lg border border-border bg-card p-2",
+        "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground",
         className,
       )}
     >
       {statusOrder.map((status) => (
-        <div className="inline-flex min-w-0 items-center gap-2 rounded-md bg-muted/60 px-2.5 py-2" key={status}>
-          <StatusBadge className="max-w-full whitespace-normal" tone={status}>
+        <div className="inline-flex min-w-0 items-center gap-1.5" key={status}>
+          <StatusBadge className="border-0 bg-transparent p-0 shadow-none" tone={status}>
             {localize(statusLabels[status], language)}
           </StatusBadge>
-          <strong className="text-sm leading-none text-foreground">{counts[status]}</strong>
+          <strong className="text-sm font-medium leading-none text-foreground">{counts[status]}</strong>
         </div>
       ))}
     </div>
