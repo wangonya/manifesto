@@ -122,6 +122,33 @@ describe("Manifesto app", () => {
     expect(submitButton).toBeEnabled();
   });
 
+  it("shows seeded context notes and requires note text before adding anonymous context", async () => {
+    const { user } = renderApp();
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    const submitButton = within(detail).getByRole("button", { name: "Add anonymous context note" });
+
+    expect(
+      within(detail).getByText(/Clinic construction alone will not meet the pledge/),
+    ).toBeInTheDocument();
+    expect(within(detail).getByText("No identity collected")).toBeInTheDocument();
+    expect(submitButton).toBeDisabled();
+
+    await user.selectOptions(within(detail).getByLabelText("Context language"), "sheng");
+    await user.selectOptions(within(detail).getByLabelText("Confidence label"), "needs verification");
+
+    expect(submitButton).toBeDisabled();
+
+    await user.type(
+      within(detail).getByLabelText("Context note"),
+      "Residents say night staffing depends on the next county budget hearing.",
+    );
+
+    expect(submitButton).toBeEnabled();
+  });
+
   it("adds anonymous evidence to the selected promise and queues it for sync", async () => {
     const { user } = renderApp();
 
@@ -140,11 +167,44 @@ describe("Manifesto app", () => {
       within(detail).getByText("Night-shift nurse roster was posted at the county clinic gate."),
     ).toBeInTheDocument();
     expect(within(detail).getAllByText("Clinic watch group").length).toBeGreaterThan(1);
-    expect(within(detail).getByText("Anonymous")).toBeInTheDocument();
+    expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
     expect(within(detail).getByText("Created offline")).toBeInTheDocument();
     expect(screen.getByText("2 queued")).toBeInTheDocument();
     expect(sourceSelect).toHaveValue("");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous evidence" })).toBeDisabled();
+  });
+
+  it("adds anonymous context to the selected promise and queues it for sync", async () => {
+    const { user } = renderApp();
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    const languageSelect = within(detail).getByLabelText("Context language");
+    const confidenceSelect = within(detail).getByLabelText("Confidence label");
+    const noteInput = within(detail).getByLabelText("Context note");
+    const contextNote = "Residents say night staffing depends on the next county budget hearing.";
+
+    await user.selectOptions(languageSelect, "sheng");
+    await user.selectOptions(confidenceSelect, "needs verification");
+    await user.type(noteInput, contextNote);
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous context note" }));
+
+    expect(within(detail).getByText(contextNote)).toBeInTheDocument();
+    expect(within(detail).getAllByText("needs verification").length).toBeGreaterThan(0);
+    expect(within(detail).getAllByText("Sheng").length).toBeGreaterThan(1);
+    expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
+    expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
+    expect(screen.getByText("2 queued")).toBeInTheDocument();
+    expect(languageSelect).toHaveValue("en");
+    expect(confidenceSelect).toHaveValue("community report");
+    expect(noteInput).toHaveValue("");
+    expect(within(detail).getByRole("button", { name: "Add anonymous context note" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: /manifesto browser/i }));
+
+    const browser = screen.getByRole("region", { name: "Manifesto browser" });
+    expect(within(browser).getAllByText(contextNote).length).toBeGreaterThan(1);
   });
 });
