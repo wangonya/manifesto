@@ -185,6 +185,23 @@ describe("Manifesto app", () => {
     expect(within(detailSheet).getByText(/Farmers were promised graded feeder roads/)).toBeInTheDocument();
   });
 
+  it("opens selected manifesto promise detail in a compact sheet", async () => {
+    mockMobileViewport();
+    const { user } = renderApp();
+
+    await user.click(screen.getByRole("button", { name: /manifesto browser/i }));
+    await user.click(screen.getByRole("button", { name: /David Ochieng/ }));
+    await user.click(screen.getByRole("button", { name: /view details for grade feeder roads/i }));
+
+    const detailSheet = await screen.findByRole("dialog", { name: "Promise detail" });
+    expect(
+      within(detailSheet).getByRole("region", {
+        name: "Grade feeder roads before harvest season",
+      }),
+    ).toBeInTheDocument();
+    expect(within(detailSheet).getByText(/Farmers were promised graded feeder roads/)).toBeInTheDocument();
+  });
+
   it("requires a source label and note before adding anonymous evidence", async () => {
     const { user } = renderApp();
 

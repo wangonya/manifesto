@@ -960,6 +960,7 @@ function App() {
   const [selectedCandidateId, setSelectedCandidateId] = useState("cand-amina");
   const [selectedPromiseId, setSelectedPromiseId] = useState(promises[0]?.id ?? "");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [browserDetailOpen, setBrowserDetailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState<"all" | OfficeCode>("all");
   const [sectorFilter, setSectorFilter] = useState<"all" | SectorCode>("all");
@@ -1064,6 +1065,7 @@ function App() {
 
   function handleSelectCandidate(candidateId: string) {
     setSelectedCandidateId(candidateId);
+    setBrowserDetailOpen(false);
     const firstPromise = getPromisesForCandidate(candidateId)[0];
     if (firstPromise) {
       setSelectedPromiseId(firstPromise.id);
@@ -1086,8 +1088,16 @@ function App() {
     }
   }
 
+  function handleSelectManifestoPromise(promiseId: string) {
+    handleSelectPromise(promiseId);
+    if (window.matchMedia?.("(max-width: 1120px)").matches) {
+      setBrowserDetailOpen(true);
+    }
+  }
+
   function handleSelectView(nextView: View) {
     if (nextView === "dashboard") {
+      setBrowserDetailOpen(false);
       const dashboardPromise =
         priorityPromises.find((promise) => promise.id === selectedPromiseId) ?? priorityPromises[0];
       if (dashboardPromise && dashboardPromise.id !== selectedPromiseId) {
@@ -1213,12 +1223,12 @@ function App() {
                       <strong>{localize(selectedDashboardPromise.title, language)}</strong>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent className="dashboard-detail-sheet" side="right">
+                  <SheetContent className="promise-detail-sheet" side="right">
                     <SheetHeader>
                       <SheetTitle>{localize(uiCopy.promiseDetail, language)}</SheetTitle>
                       <SheetDescription>{localize(selectedDashboardPromise.title, language)}</SheetDescription>
                     </SheetHeader>
-                    <div className="dashboard-detail-sheet__body">
+                    <div className="promise-detail-sheet__body">
                       <PromiseDetail
                         compact
                         contextNoteRecords={contextNoteRecords}
@@ -1316,13 +1326,13 @@ function App() {
                   <Icon name={isElectedCandidate(selectedCandidate) ? "pin" : "archive"} />
                 </div>
                 <div>
-                  <div className="promise-card__topline">
+                  <div className="candidate-profile__topline">
                     <StatusPill tone={isElectedCandidate(selectedCandidate) ? "kept" : "not_started"}>
                       {isElectedCandidate(selectedCandidate)
                         ? localize(uiCopy.elected, language)
                         : localize(uiCopy.archived, language)}
                     </StatusPill>
-                    <span className="promise-card__sector">{selectedCandidate.electionYear}</span>
+                    <span className="candidate-profile__year">{selectedCandidate.electionYear}</span>
                   </div>
                   <h2>{selectedCandidate.name}</h2>
                   <p>
@@ -1383,7 +1393,7 @@ function App() {
                               active={selectedPromise?.id === promise.id}
                               key={promise.id}
                               language={language}
-                              onSelect={handleSelectPromise}
+                              onSelect={handleSelectManifestoPromise}
                               promise={promise}
                             />
                           ))}
@@ -1391,6 +1401,28 @@ function App() {
                     </div>
                   ))}
                 </section>
+
+                {selectedPromise ? (
+                  <Sheet open={browserDetailOpen} onOpenChange={setBrowserDetailOpen}>
+                    <SheetContent className="promise-detail-sheet" side="right">
+                      <SheetHeader>
+                        <SheetTitle>{localize(uiCopy.promiseDetail, language)}</SheetTitle>
+                        <SheetDescription>{localize(selectedPromise.title, language)}</SheetDescription>
+                      </SheetHeader>
+                      <div className="promise-detail-sheet__body">
+                        <PromiseDetail
+                          compact
+                          contextNoteRecords={contextNoteRecords}
+                          evidenceRecords={evidenceRecords}
+                          language={language}
+                          onAddContextNote={handleAddContextNote}
+                          onAddEvidence={handleAddEvidence}
+                          promise={selectedPromise}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : null}
 
                 <aside className="manifesto-promise-detail" aria-label={localize(uiCopy.promiseDetail, language)}>
                   <PromiseDetail
