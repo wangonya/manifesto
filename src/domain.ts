@@ -1,10 +1,12 @@
 import {
   candidates,
+  contextNotes,
   evidence,
   manifestos,
   promises,
   statusHistory,
   type Candidate,
+  type ContextNote,
   type Evidence as EvidenceRecord,
   type PromiseRecord,
   type PromiseStatus,
@@ -58,6 +60,17 @@ export function getEvidenceForPromise(promiseId: string, evidenceRecords: Eviden
     .sort((first, second) => {
       const firstIsLocal = first.id.startsWith("evidence-local-");
       const secondIsLocal = second.id.startsWith("evidence-local-");
+      if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
+      return second.createdAt.localeCompare(first.createdAt);
+    });
+}
+
+export function getContextNotesForPromise(promiseId: string, contextNoteRecords: ContextNote[] = contextNotes) {
+  return contextNoteRecords
+    .filter((item) => item.promiseId === promiseId)
+    .sort((first, second) => {
+      const firstIsLocal = first.id.startsWith("context-local-");
+      const secondIsLocal = second.id.startsWith("context-local-");
       if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
       return second.createdAt.localeCompare(first.createdAt);
     });

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   filterCandidates,
+  getContextNotesForPromise,
   getEvidenceForPromise,
   getFollowedPromises,
   getPriorityPromises,
   getPromisesForCandidate,
   getStatusCounts,
 } from "./domain";
+import type { ContextNote } from "./data";
 
 describe("seeded civic data rules", () => {
   it("counts promise statuses for a candidate manifesto", () => {
@@ -60,5 +62,40 @@ describe("seeded civic data rules", () => {
       anonymous: true,
       createdOffline: true,
     });
+  });
+
+  it("returns context notes newest first with local notes prioritized", () => {
+    const contextNoteRecords: ContextNote[] = [
+      {
+        id: "context-seeded-newer",
+        promiseId: "promise-clinic",
+        note: "Seeded newer note",
+        language: "en",
+        confidenceLabel: "public record",
+        createdAt: "2028-05-01T10:00:00.000Z",
+      },
+      {
+        id: "context-local-older",
+        promiseId: "promise-clinic",
+        note: "Local older note",
+        language: "sw",
+        confidenceLabel: "community report",
+        createdAt: "2028-04-01T10:00:00.000Z",
+      },
+      {
+        id: "context-seeded-older",
+        promiseId: "promise-clinic",
+        note: "Seeded older note",
+        language: "sheng",
+        confidenceLabel: "needs verification",
+        createdAt: "2028-03-01T10:00:00.000Z",
+      },
+    ];
+
+    expect(getContextNotesForPromise("promise-clinic", contextNoteRecords).map((note) => note.id)).toEqual([
+      "context-local-older",
+      "context-seeded-newer",
+      "context-seeded-older",
+    ]);
   });
 });

@@ -2,12 +2,13 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
 import {
   candidates,
-  contextNotes,
+  contextNotes as seededContextNotes,
   evidence as seededEvidence,
   promises,
   statusHistory,
   syncQueue as seededSyncQueue,
   type Candidate,
+  type ContextNote as ContextNoteRecord,
   type Evidence as EvidenceRecord,
   type PromiseRecord,
   type PromiseStatus,
@@ -20,6 +21,7 @@ import {
   followedRegions,
   followedSectors,
   getCandidateForPromise,
+  getContextNotesForPromise,
   getEvidenceForPromise,
   getFollowedPromises,
   getManifestoForCandidate,
@@ -61,6 +63,18 @@ const evidenceTypeLabels: Record<EvidenceRecord["type"], string> = {
   photo: "Photo",
   public_record: "Public record",
 };
+
+const contextLanguageLabels: Record<ContextNoteRecord["language"], string> = {
+  en: "English",
+  sw: "Kiswahili",
+  sheng: "Sheng",
+};
+
+const confidenceLabels: ContextNoteRecord["confidenceLabel"][] = [
+  "community report",
+  "needs verification",
+  "public record",
+];
 
 const defaultSourceLabels = [
   "Anonymous resident report",
@@ -367,6 +381,7 @@ function PromiseCard({
 }
 
 type EvidenceSubmission = Pick<EvidenceRecord, "note" | "sourceLabel" | "type">;
+type ContextNoteSubmission = Pick<ContextNoteRecord, "confidenceLabel" | "language" | "note">;
 
 function linkedEvidenceLabels(historyItem: StatusHistoryRecord, evidenceRecords: EvidenceRecord[]) {
   return historyItem.evidenceIds
@@ -377,19 +392,28 @@ function linkedEvidenceLabels(historyItem: StatusHistoryRecord, evidenceRecords:
 
 function PromiseDetail({
   compact = false,
+  contextNoteRecords,
   evidenceRecords,
+  onAddContextNote,
   onAddEvidence,
   promise,
 }: {
   compact?: boolean;
+  contextNoteRecords: ContextNoteRecord[];
   evidenceRecords: EvidenceRecord[];
+  onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => void;
   onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => void;
   promise?: PromiseRecord;
 }) {
   const [evidenceType, setEvidenceType] = useState<EvidenceRecord["type"]>("community_report");
   const [sourceLabel, setSourceLabel] = useState("");
-  const [note, setNote] = useState("");
-  const canSubmitEvidence = sourceLabel.trim() !== "" && note.trim() !== "";
+  const [evidenceNote, setEvidenceNote] = useState("");
+  const [contextLanguage, setContextLanguage] = useState<ContextNoteRecord["language"]>("en");
+  const [confidenceLabel, setConfidenceLabel] =
+    useState<ContextNoteRecord["confidenceLabel"]>("community report");
+  const [contextNote, setContextNote] = useState("");
+  const canSubmitEvidence = sourceLabel.trim() !== "" && evidenceNote.trim() !== "";
+  const canSubmitContextNote = contextNote.trim() !== "";
 
   function handleSubmitEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -398,11 +422,25 @@ function PromiseDetail({
     onAddEvidence(promise.id, {
       type: evidenceType,
       sourceLabel: sourceLabel.trim(),
-      note: note.trim(),
+      note: evidenceNote.trim(),
     });
     setSourceLabel("");
-    setNote("");
+    setEvidenceNote("");
     setEvidenceType("community_report");
+  }
+
+  function handleSubmitContextNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!promise || !canSubmitContextNote) return;
+
+    onAddContextNote(promise.id, {
+      note: contextNote.trim(),
+      language: contextLanguage,
+      confidenceLabel,
+    });
+    setContextNote("");
+    setContextLanguage("en");
+    setConfidenceLabel("community report");
   }
 
   if (!promise) {
@@ -423,6 +461,7 @@ function PromiseDetail({
   const candidate = getCandidateForPromise(promise);
   const manifesto = candidate ? getManifestoForCandidate(candidate.id) : undefined;
   const completed = promise.checkpoints.filter((checkpoint) => checkpoint.complete).length;
+  const promiseContextNotes = getContextNotesForPromise(promise.id, contextNoteRecords);
   const promiseEvidence = getEvidenceForPromise(promise.id, evidenceRecords);
   const promiseHistory = getStatusHistoryForPromise(promise.id);
   const sourceLabelOptions = getSourceLabelOptions(promise.sector);
@@ -554,9 +593,9 @@ function PromiseDetail({
             <label className="form-field form-field--wide">
               <span>Evidence note</span>
               <textarea
-                onChange={(event) => setNote(event.target.value)}
+                onChange={(event) => setEvidenceNote(event.target.value)}
                 placeholder="What changed, where, and when?"
-                value={note}
+                value={evidenceNote}
               />
             </label>
           </div>
@@ -590,6 +629,99 @@ function PromiseDetail({
           </ul>
         ) : (
           <p className="empty-copy">No evidence has been added for this promise yet.</p>
+        )}
+      </div>
+
+      <div className="detail-block">
+        <div className="detail-block__heading">
+          <div>
+            <p className="eyebrow">Community context</p>
+            <h3>Anonymous notes and fact checks</h3>
+          </div>
+          <span className="detail-count">{promiseContextNotes.length}</span>
+        </div>
+        <form
+          aria-label={`Add anonymous context note for ${promise.title}`}
+          className="evidence-form"
+          onSubmit={handleSubmitContextNote}
+        >
+          <div className="evidence-form__topline">
+            <p className="eyebrow">Add context</p>
+            <span className="evidence-form__privacy">
+              <Icon name="shield" />
+              No identity collected
+            </span>
+          </div>
+          <div className="evidence-form__grid">
+            <label className="form-field">
+              <span>Context language</span>
+              <select
+                onChange={(event) =>
+                  setContextLanguage(event.target.value as ContextNoteRecord["language"])
+                }
+                value={contextLanguage}
+              >
+                {(Object.keys(contextLanguageLabels) as ContextNoteRecord["language"][]).map((language) => (
+                  <option key={language} value={language}>
+                    {contextLanguageLabels[language]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field">
+              <span>Confidence label</span>
+              <select
+                onChange={(event) =>
+                  setConfidenceLabel(event.target.value as ContextNoteRecord["confidenceLabel"])
+                }
+                value={confidenceLabel}
+              >
+                {confidenceLabels.map((label) => (
+                  <option key={label} value={label}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field form-field--wide">
+              <span>Context note</span>
+              <textarea
+                onChange={(event) => setContextNote(event.target.value)}
+                placeholder="Add local background, timing, or verification needs."
+                value={contextNote}
+              />
+            </label>
+          </div>
+          <div className="evidence-form__actions">
+            <button disabled={!canSubmitContextNote} type="submit">
+              Add anonymous context note
+            </button>
+          </div>
+        </form>
+        {promiseContextNotes.length > 0 ? (
+          <ul className="detail-list">
+            {promiseContextNotes.map((item) => (
+              <li className="detail-row" key={item.id}>
+                <span className="detail-row__icon">
+                  <Icon name={item.id.startsWith("context-local-") ? "signal" : "map"} />
+                </span>
+                <div>
+                  <div className="detail-row__topline">
+                    <strong>{item.confidenceLabel}</strong>
+                    <span>{formatDateTime(item.createdAt)}</span>
+                  </div>
+                  <p>{item.note}</p>
+                  <div className="detail-tags">
+                    <span>{contextLanguageLabels[item.language]}</span>
+                    <span>Anonymous</span>
+                    {item.id.startsWith("context-local-") ? <span>Queued for sync</span> : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-copy">No community context notes have been added for this promise yet.</p>
         )}
       </div>
 
@@ -643,6 +775,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [officeFilter, setOfficeFilter] = useState("All offices");
   const [sectorFilter, setSectorFilter] = useState("All sectors");
+  const [contextNoteRecords, setContextNoteRecords] = useState<ContextNoteRecord[]>(seededContextNotes);
   const [evidenceRecords, setEvidenceRecords] = useState<EvidenceRecord[]>(seededEvidence);
   const [syncQueueRecords, setSyncQueueRecords] = useState<SyncEnvelope[]>(seededSyncQueue);
 
@@ -667,7 +800,14 @@ function App() {
   const selectedPromiseIds = new Set(selectedPromises.map((promise) => promise.id));
   const selectedPromise =
     promises.find((promise) => promise.id === selectedPromiseId) ?? selectedPromises[0] ?? priorityPromises[0];
-  const selectedContextNotes = contextNotes.filter((note) => selectedPromiseIds.has(note.promiseId));
+  const selectedContextNotes = [...contextNoteRecords]
+    .filter((note) => selectedPromiseIds.has(note.promiseId))
+    .sort((first, second) => {
+      const firstIsLocal = first.id.startsWith("context-local-");
+      const secondIsLocal = second.id.startsWith("context-local-");
+      if (firstIsLocal !== secondIsLocal) return firstIsLocal ? -1 : 1;
+      return second.createdAt.localeCompare(first.createdAt);
+    });
   const selectedStatusHistory = statusHistory.filter((item) => selectedPromiseIds.has(item.promiseId));
   const selectedStatusCounts = getStatusCounts(selectedPromises);
   const offices = ["All offices", ...Array.from(new Set(candidates.map((candidate) => candidate.office)))];
@@ -710,6 +850,36 @@ function App() {
     };
 
     setEvidenceRecords((currentEvidence) => [nextEvidence, ...currentEvidence]);
+    setSyncQueueRecords((currentQueue) => [...currentQueue, syncEnvelope]);
+  }
+
+  function handleAddContextNote(promiseId: string, submission: ContextNoteSubmission) {
+    const createdAt = new Date().toISOString();
+    const contextNoteId = `context-local-${Date.now()}`;
+    const nextContextNote: ContextNoteRecord = {
+      id: contextNoteId,
+      promiseId,
+      note: submission.note,
+      language: submission.language,
+      confidenceLabel: submission.confidenceLabel,
+      createdAt,
+    };
+    const syncEnvelope: SyncEnvelope = {
+      id: `sync-${contextNoteId}`,
+      entityType: "context_note",
+      entityId: contextNoteId,
+      operation: "create",
+      payload: {
+        promiseId,
+        note: nextContextNote.note,
+        language: nextContextNote.language,
+        confidenceLabel: nextContextNote.confidenceLabel,
+        createdAt,
+      },
+      createdAt,
+    };
+
+    setContextNoteRecords((currentContextNotes) => [nextContextNote, ...currentContextNotes]);
     setSyncQueueRecords((currentQueue) => [...currentQueue, syncEnvelope]);
   }
 
@@ -774,8 +944,8 @@ function App() {
           <h2 id="page-title">Follow the promises that matter, without losing the wider record.</h2>
           <p>
             Seeded fictional candidates, manifestos, promises, evidence, context notes, and status history
-            are now visible for the demo. Anonymous evidence submissions are queued locally for this
-            session before persistence arrives in a later milestone.
+            are now visible for the demo. Anonymous evidence and context submissions are queued locally
+            for this session before persistence arrives in a later milestone.
           </p>
         </section>
 
@@ -846,7 +1016,9 @@ function App() {
                       {isSelected ? (
                         <PromiseDetail
                           compact
+                          contextNoteRecords={contextNoteRecords}
                           evidenceRecords={evidenceRecords}
+                          onAddContextNote={handleAddContextNote}
                           onAddEvidence={handleAddEvidence}
                           promise={promise}
                         />
@@ -1022,7 +1194,9 @@ function App() {
                               {isSelected ? (
                                 <PromiseDetail
                                   compact
+                                  contextNoteRecords={contextNoteRecords}
                                   evidenceRecords={evidenceRecords}
+                                  onAddContextNote={handleAddContextNote}
                                   onAddEvidence={handleAddEvidence}
                                   promise={promise}
                                 />
