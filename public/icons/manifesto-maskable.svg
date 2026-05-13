@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Manifesto">
+  <rect width="512" height="512" fill="#0f766e"/>
+  <circle cx="256" cy="256" r="218" fill="#115e59"/>
+  <path d="M150 104h174l62 62v250H150z" fill="#f8fafc"/>
+  <path d="M324 104v70h62" fill="#ccfbf1"/>
+  <path d="M196 221h120M196 278h120M196 335h84" stroke="#0f766e" stroke-width="28" stroke-linecap="round"/>
+  <path d="m188 383 48 37 104-138" fill="none" stroke="#eab308" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

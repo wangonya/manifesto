@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Manifesto">
+  <rect width="192" height="192" rx="40" fill="#0f766e"/>
+  <path d="M54 36h66l24 24v96H54z" fill="#f8fafc"/>
+  <path d="M120 36v27h24" fill="#ccfbf1"/>
+  <path d="M72 82h48M72 104h48M72 126h34" stroke="#0f766e" stroke-width="10" stroke-linecap="round"/>
+  <path d="m67 143 18 14 39-52" fill="none" stroke="#eab308" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
