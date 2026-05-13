@@ -1,4 +1,7 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f5d3475f-ddc2-4fac-a0ea-218f0ef9b7f5/deploy-status)](https://app.netlify.com/projects/peacetech-manifesto/deploys)
 # Manifesto
+
+[Live demo](https://peacetech-manifesto.netlify.app/)
 
 Manifesto is an offline-first civic accountability PWA for turning campaign promises into trackable, evidence-backed public commitments.
 
