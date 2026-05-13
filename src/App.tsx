@@ -315,6 +315,39 @@ function getSourceLabelOptions(sector: SectorCode) {
   return sourceLabelsBySector[sector] ?? defaultSourceLabels;
 }
 
+const syncEntityLabels: Record<SyncEnvelope["entityType"], LocalizedText> = {
+  context_note: text("Context note", "Dokezo la muktadha", "Note de contexte"),
+  evidence: text("Evidence", "Ushahidi", "Preuve"),
+  status_history: text("Status update", "Sasisho la hali", "Mise à jour du statut"),
+};
+
+function getPendingSyncRecords(syncQueueRecords: SyncEnvelope[]) {
+  return syncQueueRecords
+    .filter((record) => !record.syncedAt)
+    .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+}
+
+function getRelayedSyncRecords(syncQueueRecords: SyncEnvelope[]) {
+  return syncQueueRecords
+    .filter((record) => record.syncedAt)
+    .sort((first, second) => {
+      const firstSyncedAt = first.syncedAt ?? first.createdAt;
+      const secondSyncedAt = second.syncedAt ?? second.createdAt;
+      return secondSyncedAt.localeCompare(firstSyncedAt);
+    });
+}
+
+function getSyncState(syncQueueRecords: SyncEnvelope[], entityId: string) {
+  const syncEnvelope = syncQueueRecords.find((record) => record.entityId === entityId);
+  if (!syncEnvelope) return undefined;
+  return syncEnvelope.syncedAt ? "synced" : "queued";
+}
+
+function getPromiseIdFromSyncEnvelope(syncEnvelope: SyncEnvelope) {
+  const promiseId = syncEnvelope.payload.promiseId;
+  return typeof promiseId === "string" ? promiseId : undefined;
+}
+
 function createLocalId(kind: "context" | "evidence") {
   return `${kind}-local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -549,6 +582,171 @@ function linkedEvidenceLabels(
     .join(", ");
 }
 
+function SyncEnvelopeList({
+  emptyLabel,
+  language,
+  promiseRecords,
+  records,
+  timestampLabel,
+  title,
+}: {
+  emptyLabel: LocalizedText;
+  language: LanguageCode;
+  promiseRecords: PromiseRecord[];
+  records: SyncEnvelope[];
+  timestampLabel: LocalizedText;
+  title: LocalizedText;
+}) {
+  return (
+    <section className="grid gap-3 border-t border-border pt-3" aria-label={localize(title, language)}>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="m-0 text-sm font-medium leading-tight tracking-normal text-foreground">
+          {localize(title, language)}
+        </h3>
+        <span className={detailCountClass}>{records.length}</span>
+      </div>
+      {records.length > 0 ? (
+        <ul className="grid list-none gap-2 p-0">
+          {records.map((record) => {
+            const promiseId = getPromiseIdFromSyncEnvelope(record);
+            const promise = promiseRecords.find((item) => item.id === promiseId);
+            return (
+              <li className="grid gap-1 border-t border-border pt-2 first:border-t-0 first:pt-0" key={record.id}>
+                <div className="flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch">
+                  <strong className="text-sm font-medium text-foreground">
+                    {localize(syncEntityLabels[record.entityType], language)}
+                  </strong>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatDateTime(record.syncedAt ?? record.createdAt, language)}
+                  </span>
+                </div>
+                <p className="m-0 text-sm text-muted-foreground">
+                  {promise ? localize(promise.title, language) : record.entityId}
+                </p>
+                <span className={cn(tagClass, "w-fit justify-self-start")}>
+                  {localize(timestampLabel, language)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={emptyCopyClass}>{localize(emptyLabel, language)}</p>
+      )}
+    </section>
+  );
+}
+
+function SyncPanel({
+  databaseReady,
+  language,
+  onSync,
+  pendingRecords,
+  promiseRecords,
+  relayedRecords,
+  syncFailed,
+  syncing,
+}: {
+  databaseReady: boolean;
+  language: LanguageCode;
+  onSync: () => Promise<void>;
+  pendingRecords: SyncEnvelope[];
+  promiseRecords: PromiseRecord[];
+  relayedRecords: SyncEnvelope[];
+  syncFailed: boolean;
+  syncing: boolean;
+}) {
+  const canSync = databaseReady && pendingRecords.length > 0 && !syncing;
+  const buttonLabel = !databaseReady
+    ? uiCopy.preparingStore
+    : syncing
+      ? uiCopy.syncing
+      : pendingRecords.length > 0
+        ? uiCopy.syncLocalChanges
+        : relayedRecords.length > 0
+          ? uiCopy.allChangesRelayed
+          : uiCopy.noLocalChanges;
+
+  return (
+    <section className={cn(panelClass, "mb-6 grid gap-4")} aria-labelledby="device-sync-title">
+      <div className="flex items-start justify-between gap-4 max-[620px]:grid max-[620px]:justify-stretch">
+        <div>
+          <p className={eyebrowClass}>{localize(uiCopy.storeAndForward, language)}</p>
+          <h2 className={sectionTitleClass} id="device-sync-title">
+            {localize(uiCopy.deviceSync, language)}
+          </h2>
+        </div>
+        <Button
+          className="h-auto min-h-9 gap-2 whitespace-normal px-3 py-2 text-center leading-tight max-[620px]:w-full"
+          disabled={!canSync}
+          onClick={() => void onSync()}
+          type="button"
+          variant={pendingRecords.length > 0 ? "default" : "secondary"}
+        >
+          <Icon name={syncing ? "clock" : "signal"} />
+          {localize(buttonLabel, language)}
+        </Button>
+      </div>
+
+      <dl className="grid grid-cols-2 gap-3 max-[620px]:grid-cols-1" aria-label={localize(uiCopy.deviceSync, language)}>
+        <div className={factItemClass}>
+          <dt className={factTermClass}>
+            <Icon name="signal" />
+            {localize(uiCopy.thisDevice, language)}
+          </dt>
+          <dd className="mt-1 flex items-baseline gap-2">
+            <strong className="text-2xl font-semibold leading-none text-foreground">
+              {pendingRecords.length}
+            </strong>
+            <span className="text-sm font-medium text-muted-foreground">
+              {localize(uiCopy.queuedRecords, language)}
+            </span>
+          </dd>
+        </div>
+        <div className={factItemClass}>
+          <dt className={factTermClass}>
+            <Icon name="check" />
+            {localize(uiCopy.relayDevice, language)}
+          </dt>
+          <dd className="mt-1 flex items-baseline gap-2">
+            <strong className="text-2xl font-semibold leading-none text-foreground">
+              {relayedRecords.length}
+            </strong>
+            <span className="text-sm font-medium text-muted-foreground">
+              {localize(uiCopy.relayedRecords, language)}
+            </span>
+          </dd>
+        </div>
+      </dl>
+
+      {syncFailed ? (
+        <p className="m-0 text-sm font-medium text-destructive" role="alert">
+          {localize(uiCopy.syncFailed, language)}
+        </p>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-4 max-[820px]:grid-cols-1">
+        <SyncEnvelopeList
+          emptyLabel={uiCopy.noQueuedChanges}
+          language={language}
+          promiseRecords={promiseRecords}
+          records={pendingRecords}
+          timestampLabel={uiCopy.createdOnDevice}
+          title={uiCopy.thisDeviceQueue}
+        />
+        <SyncEnvelopeList
+          emptyLabel={uiCopy.noRelayedChanges}
+          language={language}
+          promiseRecords={promiseRecords}
+          records={relayedRecords}
+          timestampLabel={uiCopy.sentToRelay}
+          title={uiCopy.relayDevice}
+        />
+      </div>
+    </section>
+  );
+}
+
 function PromiseDetailTabs({
   compact = false,
   civicData,
@@ -558,6 +756,7 @@ function PromiseDetailTabs({
   onAddContextNote,
   onAddEvidence,
   promise,
+  syncQueueRecords,
 }: {
   compact?: boolean;
   civicData: CivicData;
@@ -567,6 +766,7 @@ function PromiseDetailTabs({
   onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => Promise<void>;
   onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => Promise<void>;
   promise: PromiseRecord;
+  syncQueueRecords: SyncEnvelope[];
 }) {
   const [evidenceType, setEvidenceType] = useState<EvidenceRecord["type"]>("community_report");
   const [sourceLabelId, setSourceLabelId] = useState("");
@@ -824,10 +1024,11 @@ function PromiseDetailTabs({
           <ul className={detailListClass}>
             {promiseEvidence.map((item) => {
               const note = localizeUserText(item.note, language);
+              const syncState = getSyncState(syncQueueRecords, item.id);
               return (
                 <li className={detailRowClass} key={item.id}>
                   <span className={detailIconClass}>
-                    <Icon name={item.createdOffline ? "signal" : "file"} />
+                    <Icon name={syncState === "synced" ? "check" : item.createdOffline ? "signal" : "file"} />
                   </span>
                   <div>
                     <div className={detailToplineClass}>
@@ -847,6 +1048,12 @@ function PromiseDetailTabs({
                       ) : null}
                       {item.anonymous ? <span className={tagClass}>{localize(uiCopy.anonymous, language)}</span> : null}
                       {item.createdOffline ? <span className={tagClass}>{localize(uiCopy.createdOffline, language)}</span> : null}
+                      {syncState === "queued" ? (
+                        <span className={tagClass}>{localize(uiCopy.queuedForSync, language)}</span>
+                      ) : null}
+                      {syncState === "synced" ? (
+                        <span className={tagClass}>{localize(uiCopy.syncedToRelay, language)}</span>
+                      ) : null}
                     </div>
                   </div>
                 </li>
@@ -944,10 +1151,11 @@ function PromiseDetailTabs({
           <ul className={detailListClass}>
             {promiseContextNotes.map((item) => {
               const note = localizeUserText(item.note, language);
+              const syncState = getSyncState(syncQueueRecords, item.id);
               return (
                 <li className={detailRowClass} key={item.id}>
                   <span className={detailIconClass}>
-                    <Icon name={item.id.startsWith("context-local-") ? "signal" : "map"} />
+                    <Icon name={syncState === "synced" ? "check" : syncState === "queued" ? "signal" : "map"} />
                   </span>
                   <div>
                     <div className={detailToplineClass}>
@@ -965,8 +1173,11 @@ function PromiseDetailTabs({
                         <span className={tagClass}>{localize(uiCopy.translationPending, language)}</span>
                       ) : null}
                       <span className={tagClass}>{localize(uiCopy.anonymous, language)}</span>
-                      {item.id.startsWith("context-local-") ? (
+                      {syncState === "queued" ? (
                         <span className={tagClass}>{localize(uiCopy.queuedForSync, language)}</span>
+                      ) : null}
+                      {syncState === "synced" ? (
+                        <span className={tagClass}>{localize(uiCopy.syncedToRelay, language)}</span>
                       ) : null}
                     </div>
                   </div>
@@ -1039,6 +1250,7 @@ function PromiseDetail({
   onAddContextNote,
   onAddEvidence,
   promise,
+  syncQueueRecords,
 }: {
   compact?: boolean;
   civicData: CivicData;
@@ -1048,6 +1260,7 @@ function PromiseDetail({
   onAddContextNote: (promiseId: string, submission: ContextNoteSubmission) => Promise<void>;
   onAddEvidence: (promiseId: string, submission: EvidenceSubmission) => Promise<void>;
   promise?: PromiseRecord;
+  syncQueueRecords: SyncEnvelope[];
 }) {
   if (!promise) {
     return (
@@ -1083,6 +1296,7 @@ function PromiseDetail({
       onAddContextNote={onAddContextNote}
       onAddEvidence={onAddEvidence}
       promise={promise}
+      syncQueueRecords={syncQueueRecords}
     />
   );
 }
@@ -1098,6 +1312,8 @@ function App() {
   const [officeFilter, setOfficeFilter] = useState<"all" | OfficeCode>("all");
   const [sectorFilter, setSectorFilter] = useState<"all" | SectorCode>("all");
   const [databaseReady, setDatabaseReady] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     document.documentElement.lang = localeForLanguage(language);
@@ -1155,6 +1371,14 @@ function App() {
   const contextNoteRecords = liveData.contextNotes;
   const statusHistoryRecords = liveData.statusHistory;
   const syncQueueRecords = liveData.syncQueue;
+  const pendingSyncRecords = useMemo(
+    () => getPendingSyncRecords(syncQueueRecords),
+    [syncQueueRecords],
+  );
+  const relayedSyncRecords = useMemo(
+    () => getRelayedSyncRecords(syncQueueRecords),
+    [syncQueueRecords],
+  );
 
   const civicData = useMemo<CivicData>(
     () => ({
@@ -1197,6 +1421,28 @@ function App() {
     priorityPromises.find((promise) => promise.id === selectedPromiseId) ?? priorityPromises[0];
   const offices = Array.from(new Set(candidateRecords.map((candidate) => candidate.office)));
   const sectors = Array.from(new Set(promiseRecords.map((promise) => promise.sector)));
+
+  async function handleSimulateDeviceSync() {
+    if (!databaseReady || pendingSyncRecords.length === 0 || syncing) return;
+
+    setSyncing(true);
+    setSyncFailed(false);
+    try {
+      const syncedAt = new Date().toISOString();
+      await db.transaction("rw", db.syncQueue, async () => {
+        await db.syncQueue.bulkPut(
+          pendingSyncRecords.map((record) => ({
+            ...record,
+            syncedAt,
+          })),
+        );
+      });
+    } catch {
+      setSyncFailed(true);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function handleAddEvidence(promiseId: string, submission: EvidenceSubmission) {
     const createdAt = new Date().toISOString();
@@ -1346,7 +1592,7 @@ function App() {
             </Badge>
             <Badge className="flex items-center gap-1.5 rounded-md border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground" variant="outline">
               <Icon name="signal" />
-              {syncQueueRecords.length} {localize(uiCopy.queued, language)}
+              {pendingSyncRecords.length} {localize(uiCopy.queued, language)}
             </Badge>
           </div>
         </div>
@@ -1393,6 +1639,17 @@ function App() {
             {localize(uiCopy.manifestoBrowser, language)}
           </Button>
         </nav>
+
+        <SyncPanel
+          databaseReady={databaseReady}
+          language={language}
+          onSync={handleSimulateDeviceSync}
+          pendingRecords={pendingSyncRecords}
+          promiseRecords={promiseRecords}
+          relayedRecords={relayedSyncRecords}
+          syncFailed={syncFailed}
+          syncing={syncing}
+        />
 
         {view === "dashboard" ? (
           <section className="grid grid-cols-[minmax(320px,0.85fr)_minmax(0,1.25fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.followingDashboard, language)}>
@@ -1445,6 +1702,7 @@ function App() {
                         onAddContextNote={handleAddContextNote}
                         onAddEvidence={handleAddEvidence}
                         promise={selectedDashboardPromise}
+                        syncQueueRecords={syncQueueRecords}
                       />
                     </div>
                   </SheetContent>
@@ -1462,6 +1720,7 @@ function App() {
                 onAddContextNote={handleAddContextNote}
                 onAddEvidence={handleAddEvidence}
                 promise={selectedDashboardPromise}
+                syncQueueRecords={syncQueueRecords}
               />
             </aside>
           </section>
@@ -1633,6 +1892,7 @@ function App() {
                           onAddContextNote={handleAddContextNote}
                           onAddEvidence={handleAddEvidence}
                           promise={selectedPromise}
+                          syncQueueRecords={syncQueueRecords}
                         />
                       </div>
                     </SheetContent>
@@ -1649,6 +1909,7 @@ function App() {
                     onAddContextNote={handleAddContextNote}
                     onAddEvidence={handleAddEvidence}
                     promise={selectedPromise}
+                    syncQueueRecords={syncQueueRecords}
                   />
                 </aside>
               </section>
