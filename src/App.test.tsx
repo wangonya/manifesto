@@ -391,6 +391,40 @@ describe("Manifesto app", () => {
     expect(await screen.findByText("2 queued")).toBeInTheDocument();
   });
 
+  it("simulates device sync without deleting queued evidence", async () => {
+    const { user } = renderApp();
+    const evidenceNote = "Weekend clinic hours were verified by the clinic watch group.";
+
+    const detail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, detail, "Evidence");
+    await user.selectOptions(within(detail).getByLabelText("Source label"), "clinic-watch-group");
+    await user.type(within(detail).getByLabelText("Evidence note"), evidenceNote);
+    await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
+
+    expect(await within(detail).findByText(evidenceNote)).toBeInTheDocument();
+    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: "Sync local changes" }));
+
+    expect(await screen.findByText("0 queued")).toBeInTheDocument();
+    const syncPanel = screen.getByRole("region", { name: "Device sync" });
+    expect(within(syncPanel).getByText("No queued local changes.")).toBeInTheDocument();
+    expect(
+      within(syncPanel).getAllByText("Open three 24-hour maternal health clinics").length,
+    ).toBeGreaterThan(0);
+    expect(within(syncPanel).getByText("Grade feeder roads before harvest season")).toBeInTheDocument();
+    expect(await within(detail).findByText("Synced to relay")).toBeInTheDocument();
+    expect(within(detail).getByText(evidenceNote)).toBeInTheDocument();
+
+    const queueRecords = await db.syncQueue.toArray();
+    expect(queueRecords).toHaveLength(2);
+    expect(queueRecords.every((record) => record.syncedAt)).toBe(true);
+    const clinicEvidence = await db.evidence.where("promiseId").equals("promise-clinic").toArray();
+    expect(clinicEvidence.some((record) => record.note.values.en === evidenceNote)).toBe(true);
+  });
+
   it("keeps an intentionally empty sync queue instead of restoring seeded queue rows", async () => {
     renderApp();
 
