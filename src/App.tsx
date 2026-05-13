@@ -4,7 +4,6 @@ import "./App.css";
 import { PromiseRow } from "@/components/app/promise-row";
 import { StatusBadge } from "@/components/app/status-badge";
 import { StatusStrip } from "@/components/app/status-strip";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,7 +71,7 @@ import {
   type LocalizedText,
 } from "./i18n";
 
-type View = "dashboard" | "manifestos";
+type View = "dashboard" | "manifestos" | "sync";
 type IconName =
   | "archive"
   | "book"
@@ -637,55 +636,62 @@ function SyncEnvelopeList({
   );
 }
 
+function PhoneRelayPreview({ language }: { language: LanguageCode }) {
+  const previewSteps = [
+    uiCopy.phoneRelayAdvertises,
+    uiCopy.phoneRelayCopies,
+    uiCopy.phoneRelayServerSeparate,
+  ];
+
+  return (
+    <section className="grid gap-3 border-t border-border pt-3" aria-labelledby="phone-relay-preview-title">
+      <div className="flex items-start justify-between gap-3 max-[520px]:grid max-[520px]:justify-stretch">
+        <div>
+          <p className={eyebrowClass}>{localize(uiCopy.previewOnly, language)}</p>
+          <h3 className="m-0 text-sm font-medium leading-tight tracking-normal text-foreground" id="phone-relay-preview-title">
+            {localize(uiCopy.phoneRelayPreview, language)}
+          </h3>
+        </div>
+        <span className={cn(tagClass, "w-fit")}>{localize(uiCopy.autoSync, language)}</span>
+      </div>
+      <ol className="grid list-decimal gap-2 pl-5 text-sm text-muted-foreground">
+        {previewSteps.map((step) => (
+          <li key={localize(step, "en")}>{localize(step, language)}</li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function SyncPanel({
-  databaseReady,
   language,
-  onSync,
   pendingRecords,
   promiseRecords,
   relayedRecords,
   syncFailed,
+  syncOnline,
   syncing,
 }: {
-  databaseReady: boolean;
   language: LanguageCode;
-  onSync: () => Promise<void>;
   pendingRecords: SyncEnvelope[];
   promiseRecords: PromiseRecord[];
   relayedRecords: SyncEnvelope[];
   syncFailed: boolean;
+  syncOnline: boolean;
   syncing: boolean;
 }) {
-  const canSync = databaseReady && pendingRecords.length > 0 && !syncing;
-  const buttonLabel = !databaseReady
-    ? uiCopy.preparingStore
-    : syncing
-      ? uiCopy.syncing
-      : pendingRecords.length > 0
-        ? uiCopy.syncLocalChanges
-        : relayedRecords.length > 0
-          ? uiCopy.allChangesRelayed
-          : uiCopy.noLocalChanges;
+  const statusCopy = syncOnline ? uiCopy.serverAutoSyncBody : uiCopy.serverOfflineBody;
 
   return (
     <section className={cn(panelClass, "mb-6 grid gap-4")} aria-labelledby="device-sync-title">
       <div className="flex items-start justify-between gap-4 max-[620px]:grid max-[620px]:justify-stretch">
         <div>
-          <p className={eyebrowClass}>{localize(uiCopy.storeAndForward, language)}</p>
+          <p className={eyebrowClass}>{localize(uiCopy.serverArchive, language)}</p>
           <h2 className={sectionTitleClass} id="device-sync-title">
             {localize(uiCopy.deviceSync, language)}
           </h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{localize(statusCopy, language)}</p>
         </div>
-        <Button
-          className="h-auto min-h-9 gap-2 whitespace-normal px-3 py-2 text-center leading-tight max-[620px]:w-full"
-          disabled={!canSync}
-          onClick={() => void onSync()}
-          type="button"
-          variant={pendingRecords.length > 0 ? "default" : "secondary"}
-        >
-          <Icon name={syncing ? "clock" : "signal"} />
-          {localize(buttonLabel, language)}
-        </Button>
       </div>
 
       <dl className="grid grid-cols-2 gap-3 max-[620px]:grid-cols-1" aria-label={localize(uiCopy.deviceSync, language)}>
@@ -706,18 +712,25 @@ function SyncPanel({
         <div className={factItemClass}>
           <dt className={factTermClass}>
             <Icon name="check" />
-            {localize(uiCopy.relayDevice, language)}
+            {localize(uiCopy.serverArchive, language)}
           </dt>
           <dd className="mt-1 flex items-baseline gap-2">
             <strong className="text-2xl font-semibold leading-none text-foreground">
               {relayedRecords.length}
             </strong>
             <span className="text-sm font-medium text-muted-foreground">
-              {localize(uiCopy.relayedRecords, language)}
+              {localize(uiCopy.serverArchiveRecords, language)}
             </span>
           </dd>
         </div>
       </dl>
+
+      {syncing ? (
+        <p className="m-0 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Icon name="clock" />
+          {localize(uiCopy.syncing, language)}
+        </p>
+      ) : null}
 
       {syncFailed ? (
         <p className="m-0 text-sm font-medium text-destructive" role="alert">
@@ -739,10 +752,11 @@ function SyncPanel({
           language={language}
           promiseRecords={promiseRecords}
           records={relayedRecords}
-          timestampLabel={uiCopy.sentToRelay}
-          title={uiCopy.relayDevice}
+          timestampLabel={uiCopy.sentToServer}
+          title={uiCopy.serverArchive}
         />
       </div>
+      <PhoneRelayPreview language={language} />
     </section>
   );
 }
@@ -1052,7 +1066,7 @@ function PromiseDetailTabs({
                         <span className={tagClass}>{localize(uiCopy.queuedForSync, language)}</span>
                       ) : null}
                       {syncState === "synced" ? (
-                        <span className={tagClass}>{localize(uiCopy.syncedToRelay, language)}</span>
+                        <span className={tagClass}>{localize(uiCopy.syncedToServer, language)}</span>
                       ) : null}
                     </div>
                   </div>
@@ -1177,7 +1191,7 @@ function PromiseDetailTabs({
                         <span className={tagClass}>{localize(uiCopy.queuedForSync, language)}</span>
                       ) : null}
                       {syncState === "synced" ? (
-                        <span className={tagClass}>{localize(uiCopy.syncedToRelay, language)}</span>
+                        <span className={tagClass}>{localize(uiCopy.syncedToServer, language)}</span>
                       ) : null}
                     </div>
                   </div>
@@ -1312,12 +1326,31 @@ function App() {
   const [officeFilter, setOfficeFilter] = useState<"all" | OfficeCode>("all");
   const [sectorFilter, setSectorFilter] = useState<"all" | SectorCode>("all");
   const [databaseReady, setDatabaseReady] = useState(false);
+  const [browserOnline, setBrowserOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
   const [syncFailed, setSyncFailed] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const syncOnline = browserOnline;
 
   useEffect(() => {
     document.documentElement.lang = localeForLanguage(language);
   }, [language]);
+
+  useEffect(() => {
+    function handleConnectionChange() {
+      setBrowserOnline(navigator.onLine);
+      setSyncFailed(false);
+    }
+
+    handleConnectionChange();
+    window.addEventListener("online", handleConnectionChange);
+    window.addEventListener("offline", handleConnectionChange);
+    return () => {
+      window.removeEventListener("online", handleConnectionChange);
+      window.removeEventListener("offline", handleConnectionChange);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1380,6 +1413,12 @@ function App() {
     [syncQueueRecords],
   );
 
+  useEffect(() => {
+    if (!databaseReady || !syncOnline || syncing || syncFailed || pendingSyncRecords.length === 0) return;
+
+    void markPendingSyncRecords(pendingSyncRecords);
+  }, [databaseReady, pendingSyncRecords, syncFailed, syncOnline, syncing]);
+
   const civicData = useMemo<CivicData>(
     () => ({
       candidates: candidateRecords,
@@ -1422,8 +1461,8 @@ function App() {
   const offices = Array.from(new Set(candidateRecords.map((candidate) => candidate.office)));
   const sectors = Array.from(new Set(promiseRecords.map((promise) => promise.sector)));
 
-  async function handleSimulateDeviceSync() {
-    if (!databaseReady || pendingSyncRecords.length === 0 || syncing) return;
+  async function markPendingSyncRecords(records: SyncEnvelope[]) {
+    if (!databaseReady || records.length === 0 || syncing) return;
 
     setSyncing(true);
     setSyncFailed(false);
@@ -1431,7 +1470,7 @@ function App() {
       const syncedAt = new Date().toISOString();
       await db.transaction("rw", db.syncQueue, async () => {
         await db.syncQueue.bulkPut(
-          pendingSyncRecords.map((record) => ({
+          records.map((record) => ({
             ...record,
             syncedAt,
           })),
@@ -1455,7 +1494,7 @@ function App() {
       sourceLabel: submission.sourceLabel,
       anonymous: true,
       createdAt,
-      createdOffline: true,
+      createdOffline: !syncOnline,
     };
     const syncEnvelope: SyncEnvelope = {
       id: `sync-${evidenceId}`,
@@ -1557,6 +1596,21 @@ function App() {
     setView(nextView);
   }
 
+  const pageTitle =
+    view === "dashboard"
+      ? uiCopy.followingDashboard
+      : view === "manifestos"
+        ? uiCopy.manifestoBrowser
+        : uiCopy.deviceSync;
+  const pageBody =
+    view === "dashboard"
+      ? uiCopy.dashboardHeaderBody
+      : view === "manifestos"
+        ? uiCopy.manifestoHeaderBody
+        : syncOnline
+          ? uiCopy.serverAutoSyncBody
+          : uiCopy.serverOfflineBody;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/95">
@@ -1570,11 +1624,11 @@ function App() {
               <p className="mt-0.5 text-sm text-muted-foreground">{localize(uiCopy.brandTagline, language)}</p>
             </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2.5 max-[820px]:items-start max-[820px]:justify-start">
-            <label className="inline-grid grid-cols-[auto_auto] items-center gap-2 rounded-md border border-input bg-background py-1.5 pr-2 pl-3 text-sm font-medium text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-sm text-muted-foreground max-[820px]:items-start max-[820px]:justify-start">
+            <label className="inline-flex items-center gap-2 font-medium">
               <span>{localize(uiCopy.language, language)}</span>
               <select
-                className="min-w-28 rounded-md border border-input bg-background px-2 py-1 text-foreground"
+                className="min-w-28 rounded-none border-0 border-b border-border bg-transparent px-0 py-0.5 font-medium text-foreground shadow-none outline-none focus:border-foreground"
                 aria-label={localize(uiCopy.language, language)}
                 onChange={(event) => setLanguage(event.target.value as LanguageCode)}
                 value={language}
@@ -1586,14 +1640,12 @@ function App() {
                 ))}
               </select>
             </label>
-            <Badge className="flex items-center gap-1.5 rounded-md border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground" variant="outline">
-              <Icon name="shield" />
-              {localize(uiCopy.anonymousByDefault, language)}
-            </Badge>
-            <Badge className="flex items-center gap-1.5 rounded-md border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground" variant="outline">
-              <Icon name="signal" />
-              {pendingSyncRecords.length} {localize(uiCopy.queued, language)}
-            </Badge>
+            <StatusBadge
+              className="border-0 bg-transparent p-0 text-sm shadow-none"
+              tone={syncOnline ? "kept" : "missed"}
+            >
+              {localize(syncOnline ? uiCopy.online : uiCopy.offline, language)}
+            </StatusBadge>
           </div>
         </div>
       </header>
@@ -1603,14 +1655,10 @@ function App() {
           <div>
             <p className={eyebrowClass}>{localize(uiCopy.voiceAndAccountability, language)}</p>
             <h2 className="m-0 text-[clamp(1.55rem,3vw,2.5rem)] font-semibold leading-tight tracking-normal text-foreground max-[520px]:text-[1.75rem]" id="page-title">
-              {view === "dashboard"
-                ? localize(uiCopy.followingDashboard, language)
-                : localize(uiCopy.manifestoBrowser, language)}
+              {localize(pageTitle, language)}
             </h2>
             <p className="mt-2.5 max-w-2xl text-base text-muted-foreground">
-              {view === "dashboard"
-                ? localize(uiCopy.dashboardHeaderBody, language)
-                : localize(uiCopy.manifestoHeaderBody, language)}
+              {localize(pageBody, language)}
             </p>
           </div>
         </div>
@@ -1638,18 +1686,18 @@ function App() {
             <Icon name="book" />
             {localize(uiCopy.manifestoBrowser, language)}
           </Button>
+          <Button
+            className={cn(
+              "gap-2 rounded-md text-sm font-medium",
+            )}
+            onClick={() => handleSelectView("sync")}
+            type="button"
+            variant={view === "sync" ? "secondary" : "ghost"}
+          >
+            <Icon name="signal" />
+            {localize(uiCopy.deviceSync, language)}
+          </Button>
         </nav>
-
-        <SyncPanel
-          databaseReady={databaseReady}
-          language={language}
-          onSync={handleSimulateDeviceSync}
-          pendingRecords={pendingSyncRecords}
-          promiseRecords={promiseRecords}
-          relayedRecords={relayedSyncRecords}
-          syncFailed={syncFailed}
-          syncing={syncing}
-        />
 
         {view === "dashboard" ? (
           <section className="grid grid-cols-[minmax(320px,0.85fr)_minmax(0,1.25fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.followingDashboard, language)}>
@@ -1724,7 +1772,7 @@ function App() {
               />
             </aside>
           </section>
-        ) : (
+        ) : view === "manifestos" ? (
           <section className="grid grid-cols-[minmax(280px,0.45fr)_minmax(0,1.55fr)] items-start gap-6 max-[820px]:grid-cols-1" aria-label={localize(uiCopy.manifestoBrowser, language)}>
             <aside className={cn(panelClass, "sticky top-6 max-[820px]:static")}>
               <div className={sectionHeadingClass}>
@@ -1915,6 +1963,16 @@ function App() {
               </section>
             </section>
           </section>
+        ) : (
+          <SyncPanel
+            language={language}
+            pendingRecords={pendingSyncRecords}
+            promiseRecords={promiseRecords}
+            relayedRecords={relayedSyncRecords}
+            syncFailed={syncFailed}
+            syncOnline={syncOnline}
+            syncing={syncing}
+          />
         )}
       </main>
     </div>

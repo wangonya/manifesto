@@ -5,6 +5,11 @@ import App from "./App";
 import { db } from "./db";
 
 const originalMatchMedia = window.matchMedia;
+const originalNavigatorOnline = Object.getOwnPropertyDescriptor(
+  Navigator.prototype,
+  "onLine",
+);
+let mockedOnline = true;
 
 function renderApp() {
   return {
@@ -37,8 +42,40 @@ async function openDetailTab(
   await user.click(within(detail).getByRole("tab", { name: tabName }));
 }
 
+async function waitForInitialAutoSync() {
+  await waitForPendingSyncCount(0);
+}
+
+async function waitForPendingSyncCount(expectedCount: number) {
+  await waitFor(async () => {
+    const pendingRecords = await db.syncQueue.filter((record) => !record.syncedAt).count();
+    expect(pendingRecords).toBe(expectedCount);
+  });
+}
+
+function setBrowserOnline(online: boolean) {
+  mockedOnline = online;
+  Object.defineProperty(Navigator.prototype, "onLine", {
+    configurable: true,
+    get: () => mockedOnline,
+  });
+  window.dispatchEvent(new Event(online ? "online" : "offline"));
+}
+
+async function switchBrowserOffline() {
+  await waitForInitialAutoSync();
+  setBrowserOnline(false);
+  expect(await screen.findByText("Offline")).toBeInTheDocument();
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
+  mockedOnline = true;
+  if (originalNavigatorOnline) {
+    Object.defineProperty(Navigator.prototype, "onLine", originalNavigatorOnline);
+  } else {
+    delete (Navigator.prototype as { onLine?: boolean }).onLine;
+  }
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: originalMatchMedia,
@@ -46,12 +83,16 @@ afterEach(() => {
 });
 
 describe("Manifesto app", () => {
-  it("renders the dashboard with followed promises, status counts, and privacy indicators", () => {
+  it("renders the dashboard with followed promises, status counts, and privacy indicators", async () => {
     renderApp();
 
     expect(screen.getByRole("heading", { level: 1, name: "Manifesto" })).toBeInTheDocument();
-    expect(screen.getByText("Anonymous by default")).toBeInTheDocument();
-    expect(screen.getByText("1 queued")).toBeInTheDocument();
+    expect(screen.queryByText("Anonymous by default")).not.toBeInTheDocument();
+    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.queryByText(/queued/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Device sync" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Device sync" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Nearby phone relay preview" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Following dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Priority promises" })).toBeInTheDocument();
     expect(
@@ -74,12 +115,40 @@ describe("Manifesto app", () => {
     expect(counts).toHaveTextContent(/At risk\s*1/);
   });
 
+  it("opens device sync as a separate primary view", async () => {
+    const { user } = renderApp();
+
+    await waitForInitialAutoSync();
+    await user.click(screen.getByRole("button", { name: "Device sync" }));
+
+    expect(screen.getAllByRole("heading", { name: "Device sync" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("checkbox", { name: /offline/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nearby phone relay preview" })).toBeInTheDocument();
+    expect(screen.getByText("Preview only")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Priority promises" })).not.toBeInTheDocument();
+  });
+
+  it("shows browser online and offline status in the header", async () => {
+    renderApp();
+
+    expect(screen.getByText("Online")).toBeInTheDocument();
+
+    setBrowserOnline(false);
+
+    expect(await screen.findByText("Offline")).toBeInTheDocument();
+
+    setBrowserOnline(true);
+
+    expect(await screen.findByText("Online")).toBeInTheDocument();
+  });
+
   it("applies the selected language across navigation, data, filters, and search", async () => {
     const { user } = renderApp();
 
     await user.selectOptions(screen.getByLabelText("Language"), "sw");
 
-    expect(screen.getByText("Bila jina kwa msingi")).toBeInTheDocument();
+    expect(screen.queryByText("Bila jina kwa msingi")).not.toBeInTheDocument();
+    expect(screen.getByText("Mtandaoni")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ahadi za kipaumbele" })).toBeInTheDocument();
 
     const dashboard = screen.getByRole("region", { name: "Dashibodi ya ufuatiliaji" });
@@ -96,7 +165,8 @@ describe("Manifesto app", () => {
     await user.selectOptions(screen.getByLabelText("Lugha"), "fr");
     await user.click(screen.getByRole("button", { name: "Tableau de bord du suivi" }));
 
-    expect(screen.getByText("Anonyme par défaut")).toBeInTheDocument();
+    expect(screen.queryByText("Anonyme par défaut")).not.toBeInTheDocument();
+    expect(screen.getByText("En ligne")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Promesses prioritaires" })).toBeInTheDocument();
     expect(screen.getByText("Réparer les forages bloqués dans les quartiers arides")).toBeInTheDocument();
   });
@@ -256,8 +326,9 @@ describe("Manifesto app", () => {
     expect(submitButton).toBeEnabled();
   });
 
-  it("adds anonymous evidence to the selected promise and queues it for sync", async () => {
+  it("adds anonymous evidence offline and queues it for server sync", async () => {
     const { user } = renderApp();
+    await switchBrowserOffline();
 
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
@@ -277,7 +348,8 @@ describe("Manifesto app", () => {
     expect(within(detail).getAllByText("Clinic watch group").length).toBeGreaterThan(1);
     expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
     expect(within(detail).getByText("Created offline")).toBeInTheDocument();
-    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+    expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
+    await waitForPendingSyncCount(1);
     expect(sourceSelect).toHaveValue("");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous evidence" })).toBeDisabled();
@@ -285,6 +357,7 @@ describe("Manifesto app", () => {
 
   it("keeps evidence form values when local persistence fails", async () => {
     const { user } = renderApp();
+    await waitForInitialAutoSync();
     const note = "Night-shift evidence should remain in the form.";
 
     const detail = screen.getByRole("region", {
@@ -304,11 +377,12 @@ describe("Manifesto app", () => {
     );
     expect(sourceSelect).toHaveValue("clinic-watch-group");
     expect(noteInput).toHaveValue(note);
-    expect(await screen.findByText("1 queued")).toBeInTheDocument();
+    await waitForInitialAutoSync();
   });
 
-  it("adds anonymous context to the selected promise and queues it for sync", async () => {
+  it("adds anonymous context online and auto-syncs it with the simulated server", async () => {
     const { user } = renderApp();
+    await waitForInitialAutoSync();
 
     const detail = screen.getByRole("region", {
       name: "Open three 24-hour maternal health clinics",
@@ -325,8 +399,8 @@ describe("Manifesto app", () => {
     expect(await within(detail).findByText(contextNote)).toBeInTheDocument();
     expect(within(detail).getAllByText("Needs verification").length).toBeGreaterThan(0);
     expect(within(detail).getAllByText("Anonymous").length).toBeGreaterThan(0);
-    expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
-    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+    expect(await within(detail).findByText("Synced to simulated server")).toBeInTheDocument();
+    await waitForInitialAutoSync();
     expect(confidenceSelect).toHaveValue("community report");
     expect(noteInput).toHaveValue("");
     expect(within(detail).getByRole("button", { name: "Add anonymous context note" })).toBeDisabled();
@@ -343,6 +417,7 @@ describe("Manifesto app", () => {
 
   it("keeps context form values when local persistence fails", async () => {
     const { user } = renderApp();
+    await waitForInitialAutoSync();
     const contextNote = "Residents say the staffing budget is still unresolved.";
 
     const detail = screen.getByRole("region", {
@@ -362,11 +437,12 @@ describe("Manifesto app", () => {
     );
     expect(confidenceSelect).toHaveValue("needs verification");
     expect(noteInput).toHaveValue(contextNote);
-    expect(await screen.findByText("1 queued")).toBeInTheDocument();
+    await waitForInitialAutoSync();
   });
 
   it("persists locally entered evidence after the app remounts", async () => {
     const { user, unmount } = renderApp();
+    await waitForInitialAutoSync();
     const evidenceNote = "County clinic gate has a posted night-shift roster.";
 
     const detail = screen.getByRole("region", {
@@ -388,11 +464,13 @@ describe("Manifesto app", () => {
     await openDetailTab(nextRender.user, remountedDetail, "Evidence");
 
     expect(await within(remountedDetail).findByText(evidenceNote)).toBeInTheDocument();
-    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+    expect(await within(remountedDetail).findByText("Synced to simulated server")).toBeInTheDocument();
+    await waitForInitialAutoSync();
   });
 
-  it("simulates device sync without deleting queued evidence", async () => {
+  it("auto-syncs queued offline evidence when demo connectivity returns", async () => {
     const { user } = renderApp();
+    await switchBrowserOffline();
     const evidenceNote = "Weekend clinic hours were verified by the clinic watch group.";
 
     const detail = screen.getByRole("region", {
@@ -404,19 +482,27 @@ describe("Manifesto app", () => {
     await user.click(within(detail).getByRole("button", { name: "Add anonymous evidence" }));
 
     expect(await within(detail).findByText(evidenceNote)).toBeInTheDocument();
-    expect(await screen.findByText("2 queued")).toBeInTheDocument();
+    expect(within(detail).getByText("Created offline")).toBeInTheDocument();
+    expect(within(detail).getByText("Queued for sync")).toBeInTheDocument();
+    await waitForPendingSyncCount(1);
 
-    await user.click(await screen.findByRole("button", { name: "Sync local changes" }));
+    setBrowserOnline(true);
 
-    expect(await screen.findByText("0 queued")).toBeInTheDocument();
+    await waitForInitialAutoSync();
+    await user.click(screen.getByRole("button", { name: "Device sync" }));
     const syncPanel = screen.getByRole("region", { name: "Device sync" });
     expect(within(syncPanel).getByText("No queued local changes.")).toBeInTheDocument();
     expect(
       within(syncPanel).getAllByText("Open three 24-hour maternal health clinics").length,
     ).toBeGreaterThan(0);
     expect(within(syncPanel).getByText("Grade feeder roads before harvest season")).toBeInTheDocument();
-    expect(await within(detail).findByText("Synced to relay")).toBeInTheDocument();
-    expect(within(detail).getByText(evidenceNote)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Following dashboard" }));
+    const syncedDetail = screen.getByRole("region", {
+      name: "Open three 24-hour maternal health clinics",
+    });
+    await openDetailTab(user, syncedDetail, "Evidence");
+    expect(await within(syncedDetail).findByText("Synced to simulated server")).toBeInTheDocument();
+    expect(within(syncedDetail).getByText(evidenceNote)).toBeInTheDocument();
 
     const queueRecords = await db.syncQueue.toArray();
     expect(queueRecords).toHaveLength(2);
@@ -435,7 +521,7 @@ describe("Manifesto app", () => {
       await db.syncQueue.clear();
     });
 
-    expect(await screen.findByText("0 queued")).toBeInTheDocument();
-    expect(screen.queryByText("1 queued")).not.toBeInTheDocument();
+    await waitForPendingSyncCount(0);
+    expect(screen.queryByText(/queued/)).not.toBeInTheDocument();
   });
 });

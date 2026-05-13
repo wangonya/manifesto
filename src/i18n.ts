@@ -103,6 +103,12 @@ export const uiCopy = {
     "Mabadiliko yote yametumwa",
     "Tous les changements ont été relayés",
   ),
+  archivedOnServer: text(
+    "Archived on server",
+    "Imehifadhiwa kwenye seva",
+    "Archivé sur le serveur",
+  ),
+  autoSync: text("Auto-sync", "Usawazishaji wa moja kwa moja", "Synchronisation automatique"),
   brandTagline: text(
     "Promise tracking for civic memory",
     "Ufuatiliaji wa ahadi kwa kumbukumbu ya raia",
@@ -214,9 +220,31 @@ export const uiCopy = {
     "Aucun changement de statut enregistré pour ce candidat pour l'instant.",
   ),
   office: text("Office", "Afisi", "Fonction"),
+  offline: text("Offline", "Nje ya mtandao", "Hors ligne"),
+  online: text("Online", "Mtandaoni", "En ligne"),
   original: text("Original", "Asili", "Original"),
   overview: text("Overview", "Muhtasari", "Vue d'ensemble"),
   pending: text("Pending", "Inasubiri", "En attente"),
+  phoneRelayAdvertises: text(
+    "This device advertises queued encrypted bundles nearby.",
+    "Kifaa hiki hutangaza vifurushi vilivyosimbwa vilivyopangwa karibu.",
+    "Cet appareil annonce les lots chiffrés en file à proximité.",
+  ),
+  phoneRelayCopies: text(
+    "Nearby phones copy the bundle and can carry it forward.",
+    "Simu zilizo karibu hunakili kifurushi na zinaweza kukipeleka mbele.",
+    "Les téléphones proches copient le lot et peuvent le transporter plus loin.",
+  ),
+  phoneRelayPreview: text(
+    "Nearby phone relay preview",
+    "Onyesho la kupitisha kupitia simu zilizo karibu",
+    "Aperçu du relais par téléphone proche",
+  ),
+  phoneRelayServerSeparate: text(
+    "Server archive remains a separate sync target.",
+    "Hifadhi ya seva hubaki kuwa lengo tofauti la usawazishaji.",
+    "L'archive serveur reste une cible de synchronisation distincte.",
+  ),
   place: text("Place", "Mahali", "Lieu"),
   primaryViews: text("Primary views", "Mitazamo mikuu", "Vues principales"),
   preparingStore: text(
@@ -234,6 +262,7 @@ export const uiCopy = {
   queuedForSync: text("Queued for sync", "Imepangwa kwa usawazishaji", "En file pour synchronisation"),
   relayDevice: text("Relay device", "Kifaa cha kupokea", "Appareil relais"),
   relayedRecords: text("Relayed records", "Rekodi zilizotumwa", "Enregistrements relayés"),
+  previewOnly: text("Preview only", "Onyesho tu", "Aperçu seulement"),
   recent: text("Recent", "Mpya", "Récent"),
   searchCandidatesAndPromises: text(
     "Search candidates and promises",
@@ -253,6 +282,23 @@ export const uiCopy = {
     "Comptes des statuts du manifeste sélectionné",
   ),
   sentToRelay: text("Sent to relay", "Imetumwa kwenye kifaa", "Envoyé au relais"),
+  sentToServer: text("Sent to server", "Imetumwa kwenye seva", "Envoyé au serveur"),
+  serverArchive: text("Server archive", "Hifadhi ya seva", "Archive serveur"),
+  serverArchiveRecords: text(
+    "Synced records",
+    "Rekodi zilizosawazishwa",
+    "Enregistrements synchronisés",
+  ),
+  serverAutoSyncBody: text(
+    "Online changes auto-sync to the simulated server. Offline changes stay queued until the device is back online.",
+    "Mabadiliko ya mtandaoni husawazishwa moja kwa moja na seva ya mfano. Mabadiliko ya nje ya mtandao husalia kwenye foleni hadi kifaa kirudi mtandaoni.",
+    "Les changements en ligne se synchronisent automatiquement avec le serveur simulé. Les changements hors ligne restent en file jusqu'au retour en ligne.",
+  ),
+  serverOfflineBody: text(
+    "Offline mode is on. Evidence and context are saved locally and queued for the simulated server.",
+    "Hali ya nje ya mtandao imewashwa. Ushahidi na muktadha huhifadhiwa kwenye kifaa na kupangwa kwa seva ya mfano.",
+    "Le mode hors ligne est actif. Les preuves et le contexte sont enregistrés localement et mis en file pour le serveur simulé.",
+  ),
   source: text("Source", "Chanzo", "Source"),
   sourceLabel: text("Source label", "Lebo ya chanzo", "Libellé de source"),
   statusChanges: text("Status changes", "Mabadiliko ya hali", "Changements de statut"),
@@ -271,6 +317,11 @@ export const uiCopy = {
   ),
   syncing: text("Syncing", "Inasawazisha", "Synchronisation"),
   syncedToRelay: text("Synced to relay", "Imesawazishwa kwenye kifaa", "Synchronisé au relais"),
+  syncedToServer: text(
+    "Synced to simulated server",
+    "Imesawazishwa na seva ya mfano",
+    "Synchronisé avec le serveur simulé",
+  ),
   thisDevice: text("This device", "Kifaa hiki", "Cet appareil"),
   thisDeviceQueue: text("This device queue", "Foleni ya kifaa hiki", "File de cet appareil"),
   translationPending: text(
