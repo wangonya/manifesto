@@ -99,6 +99,15 @@ Run the full local validation gate:
 npm run check
 ```
 
+Verify the offline app shell after a production build:
+
+```bash
+npm run build
+npm run preview
+```
+
+Open the preview URL once, then reload it with the browser network disabled. The app shell should still open; Dexie/IndexedDB remains responsible for persisted civic data.
+
 ## Agent Guidance
 
 See [AGENTS.md](./AGENTS.md) for implementation rules, scope guardrails, and verification expectations for future Codex or agent sessions.
